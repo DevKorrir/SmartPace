@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_pace/src/constants/colors.dart';
-import 'package:smart_pace/src/features/screens/login/login.dart';
+import 'package:smart_pace/src/features/screens/auth/sign_up.dart';
+import 'package:smart_pace/src/features/screens/auth/login.dart';
 
 import '../../../constants/sizes.dart';
 import '../../../constants/text_string.dart';
@@ -53,7 +54,7 @@ class Welcome extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => Get.offAll(SignUp()),
                       style:  ElevatedButton.styleFrom(
                           foregroundColor: tWhiteColor,
                           backgroundColor: tSecondaryColor,

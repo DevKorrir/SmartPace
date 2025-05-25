@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:smart_pace/src/constants/image_string.dart';
 import 'package:smart_pace/src/constants/sizes.dart';
 import 'package:smart_pace/src/constants/text_string.dart';
+import 'package:smart_pace/src/features/screens/auth/sign_up.dart';
 
 import '../../../constants/colors.dart';
 
@@ -72,6 +74,8 @@ class Login extends StatelessWidget {
                           child: Text(tForgotPassword),
                         ),
                       ),
+                      const SizedBox(height: tFormHeight),
+
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -87,12 +91,12 @@ class Login extends StatelessWidget {
                           child: Text(tLogin.toUpperCase()),
                         ),
                       ),
-                      const SizedBox(height: tFormHeight - 10.0),
+                      const SizedBox(height: tFormHeight - 20.0),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text("OR"),
-                          const SizedBox(height: tFormHeight - 10.0),
+                          const SizedBox(height: tFormHeight - 20.0),
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
@@ -106,7 +110,7 @@ class Login extends StatelessWidget {
                           ),
                           const SizedBox(height: tFormHeight),
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () => Get.offAll(SignUp()),
                             child: Text.rich(
                               TextSpan(
                                 text: tDontHaveAnAccount,style: Theme.of(context).textTheme.bodyLarge,
