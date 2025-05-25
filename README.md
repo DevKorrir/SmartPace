@@ -1,16 +1,46 @@
-# smart_pace
+# 📚 Smartpace
 
-A new Flutter project.
+**Smartpace** is a mobile application designed to help university and college students plan their studies, get reminders, collaborate in study groups, and chat with peers — all in one place. Built with **Flutter** and powered by **RethinkDB** and **Docker** on the backend, Smartpace empowers learners to study smarter and stay ahead.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## ✨ Features
 
-A few resources to get you started if this is your first Flutter project:
+- 📅 **Study Planner** – Schedule study sessions and set academic goals.
+- 🔔 **Reminders** – Get timely notifications for planned tasks and group discussions.
+- 🧠 **Group Study** – Create or join study groups and collaborate with peers.
+- 💬 **Real-Time Chat** – Chat with fellow students in real time.
+  
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 📱 Screenshots
+
+> _Coming soon_ 
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- Flutter (Dart)
+- GetX for state management and routing
+
+### Backend
+- Firebase
+- Hive
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Flutter SDK
+- Android Studio or VS Code
+- Firebase set up
+
+### Clone the repo
+
+```bash
+git clone https://github.com/Jude254-programmer/SmartPace.git
+cd SmartPace
