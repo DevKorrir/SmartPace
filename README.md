@@ -1,6 +1,6 @@
 # 📚 Smartpace
 
-**Smartpace** is a mobile application designed to help university students plan their studies, get reminders, collaborate in study groups, and chat with peers — all in one place. Built with **Flutter** and powered by **RethinkDB** and **Docker** on the backend, Smartpace empowers learners to study smarter and stay ahead.
+**Smartpace** is a mobile application designed to help university and college students plan their studies, get reminders, collaborate in study groups, and chat with peers — all in one place. Built with **Flutter** and powered by **RethinkDB** and **Docker** on the backend, Smartpace empowers learners to study smarter and stay ahead.
 
 ---
 
@@ -37,7 +37,7 @@
 ### Prerequisites
 - Flutter SDK
 - Android Studio or VS Code
-- RethinkDB installed or running in Docker
+- Firebase set up
 
 ### Clone the repo
 
