@@ -17,7 +17,7 @@ class SplashScreenController extends GetxController{
       if(_dispose.value) return;
       animate.value = true;
 
-      await Future.delayed(Duration(milliseconds: 5000));
+      await Future.delayed(Duration(milliseconds: 3000));
       if(_dispose.value) return;
 
       Get.offAll(() => const Welcome());

@@ -6,6 +6,8 @@ import 'package:smart_pace/src/constants/text_string.dart';
 import 'package:smart_pace/src/features/screens/auth/sign_up.dart';
 
 import '../../../constants/colors.dart';
+import '../../forgot_password/forgot_password_options/forgot_password_btn_widget.dart';
+import '../../forgot_password/forgot_password_options/forgot_password_model_bottom_sheet.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -70,7 +72,9 @@ class Login extends StatelessWidget {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            ForgotPasswordScreen.buildShowModalBottomSheet(context);
+                          },
                           child: Text(tForgotPassword),
                         ),
                       ),
@@ -110,11 +114,17 @@ class Login extends StatelessWidget {
                           ),
                           const SizedBox(height: tFormHeight),
                           TextButton(
-                            onPressed: () => Get.offAll(SignUp()),
+                            onPressed: () => Get.to(()=>SignUp()),
                             child: Text.rich(
                               TextSpan(
-                                text: tDontHaveAnAccount,style: Theme.of(context).textTheme.bodyLarge,
-                                children: [TextSpan(text: tSignup,style: TextStyle(color: Colors.purple))],
+                                text: tDontHaveAnAccount,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                                children: [
+                                  TextSpan(
+                                    text: tSignup,
+                                    style: TextStyle(color: Colors.purple),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -130,4 +140,6 @@ class Login extends StatelessWidget {
       ),
     );
   }
+
+
 }

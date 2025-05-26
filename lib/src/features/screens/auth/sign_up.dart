@@ -66,7 +66,7 @@ class SignUp extends StatelessWidget {
 
                         TextField(
                           decoration: InputDecoration(
-                            prefixIcon: Icon(Icons.numbers_outlined),
+                            prefixIcon: Icon(Icons.phone),
                             labelText: tPhoneNo,
                             hintText: tPhoneNo,
                             border: OutlineInputBorder(
@@ -121,7 +121,7 @@ class SignUp extends StatelessWidget {
                             ),
                             const SizedBox(height: tFormHeight),
                             TextButton(
-                              onPressed: () => Get.offAll(Login()),
+                              onPressed: () => Get.to(()=>Login()),
                               child: Text.rich(
                                 TextSpan(
                                   text: tAlreadyHaveAnAccount,style: Theme.of(context).textTheme.bodyLarge,

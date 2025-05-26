@@ -41,7 +41,7 @@ class Welcome extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => Get.offAll(() => Login()),
+                      onPressed: () => Get.to(() => Login()),
                       style:  OutlinedButton.styleFrom(
                           foregroundColor: tSecondaryColor,
                           side: BorderSide(color: tSecondaryColor),
@@ -54,7 +54,7 @@ class Welcome extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => Get.offAll(SignUp()),
+                      onPressed: () => Get.offAll(()=>SignUp()),
                       style:  ElevatedButton.styleFrom(
                           foregroundColor: tWhiteColor,
                           backgroundColor: tSecondaryColor,

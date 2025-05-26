@@ -23,6 +23,30 @@ const String tSignUpnSubtitle = "Create your profile to start your Journey.";
 const String tFullName = "Full Name";
 const String tPhoneNo = "Phone No.";
 
+// Forgot Password text
+const String tForgotPasswordTitle = "Make Selection!";
+const String tForgotPasswordSubTitle = "Select one of the options given below to reset your password.";
+const String tResetViaEmail = "Reset Via Email Verification";
+const String tResetViaPhone = "Reset Via Phone Verification";
+
+// Forgot Phone Password
+const String tForgotPhoneSubtitle = "Enter your registered Phone No to receive OTP";
+
+// Forgot Mail Password
+const String tForgotMailSubtitle = "Enter your registered Email No to receive OTP";
+const String tNext ="Next";
+
+// OTP
+const String tOtpTitle = "CO \nDE";
+const String tOtpSubtitle = "Verification";
+const String tOtpMessage = "Enter the verification code sent at ";
+
+
+
+
+
+
+
 
 
 
