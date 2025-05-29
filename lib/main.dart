@@ -14,8 +14,6 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       home: SplashScreen(),
-      defaultTransition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 500),
     );
   }
 }

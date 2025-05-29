@@ -4,6 +4,7 @@ import 'package:smart_pace/src/constants/image_string.dart';
 import 'package:smart_pace/src/constants/sizes.dart';
 import 'package:smart_pace/src/constants/text_string.dart';
 import 'package:smart_pace/src/features/screens/auth/sign_up.dart';
+import 'package:smart_pace/src/routing/navigation/navigation.dart';
 
 import '../../../constants/colors.dart';
 import '../../forgot_password/forgot_password_options/forgot_password_btn_widget.dart';
@@ -83,7 +84,7 @@ class Login extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {Get.to(MainNavigation());},
                           style: ElevatedButton.styleFrom(
                             foregroundColor: tWhiteColor,
                             backgroundColor: tSecondaryColor,
