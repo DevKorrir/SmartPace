@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class StudyStreak extends StatelessWidget {
   const StudyStreak({super.key});

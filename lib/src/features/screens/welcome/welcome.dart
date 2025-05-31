@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_pace/src/constants/colors.dart';
-import 'package:smart_pace/src/features/screens/auth/sign_up.dart';
-import 'package:smart_pace/src/features/screens/auth/login.dart';
+import 'package:smart_pace/src/constants/image_string.dart';
+import 'package:smart_pace/src/features/screens/auth/signup/sign_up.dart';
+import 'package:smart_pace/src/features/screens/auth/login/login.dart';
 
 import '../../../common_widgets/buttons/modern_button.dart';
 import '../../../constants/text_string.dart';
@@ -48,7 +49,6 @@ class _WelcomeState extends State<Welcome> with TickerProviderStateMixin {
             ),
             child: Column(
               children: [
-                // Header with animated logo
                 Expanded(
                   flex: 5,
                   child: Container(
@@ -56,7 +56,6 @@ class _WelcomeState extends State<Welcome> with TickerProviderStateMixin {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Logo container with glassmorphism effect
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -87,7 +86,7 @@ class _WelcomeState extends State<Welcome> with TickerProviderStateMixin {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(20),
                             child: Image.asset(
-                              "assets/images/welcome.png",
+                              tWelcomeScreenImage,
                               height: size.height * 0.3,
                               fit: BoxFit.contain,
                             ),
@@ -98,13 +97,11 @@ class _WelcomeState extends State<Welcome> with TickerProviderStateMixin {
                   ),
                 ),
 
-                // Content section
                 Expanded(
                   flex: 3,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Title with modern typography
                       ShaderMask(
                         shaderCallback:
                             (bounds) => LinearGradient(
@@ -128,7 +125,6 @@ class _WelcomeState extends State<Welcome> with TickerProviderStateMixin {
 
                       const SizedBox(height: 16),
 
-                      // Subtitle with better spacing
                       Text(
                         tWelcomeSubtitle,
                         style: TextStyle(
@@ -144,13 +140,11 @@ class _WelcomeState extends State<Welcome> with TickerProviderStateMixin {
                   ),
                 ),
 
-                // Button section with modern design
                 Expanded(
                   flex: 2,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // Primary button (Sign Up)
                       ModernButton(
                         text: tSignup,
                         isPrimary: true,
@@ -160,7 +154,6 @@ class _WelcomeState extends State<Welcome> with TickerProviderStateMixin {
 
                       const SizedBox(height: 16),
 
-                      // Secondary button (Login)
                       ModernButton(
                         text: tLogin,
                         isPrimary: false,

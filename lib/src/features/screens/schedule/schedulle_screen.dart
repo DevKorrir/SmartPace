@@ -451,9 +451,7 @@ class PlannerScreen extends StatelessWidget {
     _showSessionDialog(context, null);
   }
 
-  void _showEditSessionDialog(BuildContext context, StudySessionModel session) {
-    _showSessionDialog(context, session);
-  }
+
 
   void _showSessionDialog(BuildContext context, StudySessionModel? existingSession) {
     final titleController = TextEditingController(text: existingSession?.title ?? '');

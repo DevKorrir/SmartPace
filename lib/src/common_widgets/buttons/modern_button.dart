@@ -48,9 +48,7 @@ class ModernButtonState extends State<ModernButton>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme
-        .of(context)
-        .brightness == Brightness.dark;
+    
 
     return ScaleTransition(
       scale: _scaleAnimation,
