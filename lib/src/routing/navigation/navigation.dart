@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../features/screens/chat/chats.dart';
+import '../../features/screens/chat/chat_widgets/models/chat_screen.dart';
+// import '../../features/screens/chat/chats.dart';
 import '../../features/screens/home/home.dart';
 import '../../features/screens/profile/profile.dart';
 import '../../features/screens/schedule/schedulle_screen.dart';
@@ -35,7 +36,7 @@ class MainNavigation extends StatelessWidget {
   final List<Widget> pages = [
     HomeScreen(),
     PlannerScreen(),
-    ChatsScreen(),
+    ChatScreen(),
     ProfileScreen(),
   ];
 
