@@ -19,7 +19,7 @@ const String tForgotPassword = "Forgot Password?";
 const String tSignInWithGoogle = "Sign-In With Google";
 
 const String tSignUpTitle ="Create Account";
-const String tSignUpnSubtitle = "Join SmartPace and start your journey";
+const String tSignUpnSubtitle = "Join SmartPace and start your journey ";
 const String tFullName = "Full Name";
 const String tPhoneNo = "Phone No.";
 

@@ -1,31 +1,128 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-class ProfileScreen extends StatefulWidget {
+// Controller for managing profile state
+class ProfileController extends GetxController {
+  // User data - reactive variables
+  final userName = "Derick Juma".obs;
+  final userEmail = "derekjude254@gmail.com".obs;
+  final userYear = "Year 2".obs;
+  final profileImageUrl = "".obs;
+
+  // Study statistics
+  final totalSessions = 45.obs;
+  final totalHours = 120.obs;
+  final currentStreak = 7.obs;
+
+  // Settings
+  final notificationsEnabled = true.obs;
+  final darkModeEnabled = false.obs;
+  final selectedTheme = "System".obs;
+
+  // Methods for user actions
+  void updateProfile(String name, String email, String year) {
+    userName.value = name;
+    userEmail.value = email;
+    userYear.value = year;
+  }
+
+  void toggleNotifications(bool value) {
+    notificationsEnabled.value = value;
+  }
+
+  void toggleDarkMode(bool value) {
+    darkModeEnabled.value = value;
+  }
+
+  void exportData() {
+    Get.snackbar(
+      'Success',
+      'Data exported successfully!',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+    );
+  }
+
+  void backupData() {
+    Get.snackbar(
+      'Success',
+      'Data backed up to cloud!',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.blue,
+      colorText: Colors.white,
+    );
+  }
+
+  void shareProgress() {
+    Get.snackbar(
+      'Success',
+      'Progress shared!',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.orange,
+      colorText: Colors.white,
+    );
+  }
+
+  void showPrivacySettings() {
+    Get.snackbar(
+      'Info',
+      'Privacy settings opened',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  void showHelpAndSupport() {
+    Get.snackbar(
+      'Info',
+      'Help & Support opened',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  void signOut() {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              Get.snackbar(
+                'Success',
+                'Signed out successfully!',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.red,
+                colorText: Colors.white,
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String getInitials(String name) {
+    return name.split(' ').map((word) => word[0]).take(2).join().toUpperCase();
+  }
+}
+
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  // Sample user data
-  String userName = "Derick Juma";
-  String userEmail = "derekjude254@gmail.com";
-  String userYear = "Year 2";
-  String profileImageUrl = "";
-
-  // Study statistics
-  int totalSessions = 45;
-  int totalHours = 120;
-  int currentStreak = 7;
-
-  // Settings
-  bool notificationsEnabled = true;
-  bool darkModeEnabled = false;
-  String selectedTheme = "System";
-
-  @override
   Widget build(BuildContext context) {
+    // Initialize controller
+    final ProfileController controller = Get.put(ProfileController());
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -34,10 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         elevation: 0,
         foregroundColor: Colors.black87,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.dark_mode),
-            onPressed: () {},
-          ),
+          Obx(() => IconButton(
+            icon: Icon(controller.darkModeEnabled.value 
+                ? Icons.light_mode 
+                : Icons.dark_mode),
+            onPressed: () => controller.toggleDarkMode(!controller.darkModeEnabled.value),
+          )),
         ],
       ),
       body: SingleChildScrollView(
@@ -45,26 +144,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             // Profile Header
-            _buildProfileHeader(),
+            _buildProfileHeader(controller),
             const SizedBox(height: 24),
 
             // Study Statistics
-            _buildStudyStats(),
+            _buildStudyStats(controller),
             const SizedBox(height: 24),
 
             // Quick Actions
-            _buildQuickActions(),
+            _buildQuickActions(controller),
             const SizedBox(height: 24),
 
             // Settings Options
-            _buildSettingsSection(),
+            _buildSettingsSection(controller),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(ProfileController controller) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -83,12 +182,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Profile Picture
           Stack(
             children: [
-              CircleAvatar(
+              Obx(() => CircleAvatar(
                 radius: 50,
                 backgroundColor: Colors.blue[100],
-                child: profileImageUrl.isEmpty
+                child: controller.profileImageUrl.value.isEmpty
                     ? Text(
-                  _getInitials(userName),
+                  controller.getInitials(controller.userName.value),
                   style: const TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -97,13 +196,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 )
                     : ClipOval(
                   child: Image.network(
-                    profileImageUrl,
+                    controller.profileImageUrl.value,
                     width: 100,
                     height: 100,
                     fit: BoxFit.cover,
                   ),
                 ),
-              ),
+              )),
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -125,43 +224,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
 
           // User Info
-          Text(
-            userName,
+          Obx(() => Text(
+            controller.userName.value,
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
-          ),
+          )),
           const SizedBox(height: 4),
-          Text(
-            userEmail,
+          Obx(() => Text(
+            controller.userEmail.value,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
             ),
-          ),
+          )),
           const SizedBox(height: 4),
-          Container(
+          Obx(() => Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.blue[50],
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              userYear,
+              controller.userYear.value,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.blue[700],
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ),
+          )),
           const SizedBox(height: 16),
 
           // Edit Profile Button
           ElevatedButton.icon(
-            onPressed: () => _showEditProfileDialog(),
+            onPressed: () => _showEditProfileDialog(controller),
             icon: const Icon(Icons.edit, size: 18),
             label: const Text('Edit Profile'),
             style: ElevatedButton.styleFrom(
@@ -178,7 +277,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStudyStats() {
+  Widget _buildStudyStats(ProfileController controller) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -207,21 +306,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
+                child: Obx(() => _buildStatCard(
                   'Total Sessions',
-                  totalSessions.toString(),
+                  controller.totalSessions.value.toString(),
                   Icons.book,
                   Colors.blue,
-                ),
+                )),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildStatCard(
+                child: Obx(() => _buildStatCard(
                   'Study Hours',
-                  '${totalHours}h',
+                  '${controller.totalHours.value}h',
                   Icons.access_time,
                   Colors.green,
-                ),
+                )),
               ),
             ],
           ),
@@ -229,15 +328,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
+                child: Obx(() => _buildStatCard(
                   'Current Streak',
-                  '$currentStreak days',
+                  '${controller.currentStreak.value} days',
                   Icons.local_fire_department,
                   Colors.orange,
-                ),
+                )),
               ),
-
-
             ],
           ),
         ],
@@ -278,7 +375,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(ProfileController controller) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -311,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'Export Data',
                   Icons.download,
                   Colors.blue,
-                      () => _exportData(),
+                  controller.exportData,
                 ),
               ),
               const SizedBox(width: 12),
@@ -320,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'Backup',
                   Icons.cloud_upload,
                   Colors.green,
-                      () => _backupData(),
+                  controller.backupData,
                 ),
               ),
               const SizedBox(width: 12),
@@ -329,7 +426,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'Share',
                   Icons.share,
                   Colors.orange,
-                      () => _shareProgress(),
+                  controller.shareProgress,
                 ),
               ),
             ],
@@ -367,7 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingsSection() {
+  Widget _buildSettingsSection(ProfileController controller) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -397,28 +494,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Notifications',
             'Receive study reminders',
             Icons.notifications,
-            Switch(
-              value: notificationsEnabled,
-              onChanged: (value) {
-                setState(() {
-                  notificationsEnabled = value;
-                });
-              },
-            ),
+            Obx(() => Switch(
+              value: controller.notificationsEnabled.value,
+              onChanged: controller.toggleNotifications,
+            )),
           ),
           _buildSettingsTile(
             'Privacy',
             'Manage your data and privacy',
             Icons.privacy_tip,
             const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _showPrivacySettings(),
+            onTap: controller.showPrivacySettings,
           ),
           _buildSettingsTile(
             'Help & Support',
             'Get help and contact support',
             Icons.help,
             const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _showHelpAndSupport(),
+            onTap: controller.showHelpAndSupport,
           ),
           _buildSettingsTile(
             'About',
@@ -431,7 +524,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _signOut(),
+              onPressed: controller.signOut,
               icon: const Icon(Icons.logout),
               label: const Text('Sign Out'),
               style: ElevatedButton.styleFrom(
@@ -468,18 +561,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  String _getInitials(String name) {
-    return name.split(' ').map((word) => word[0]).take(2).join().toUpperCase();
-  }
+  void _showEditProfileDialog(ProfileController controller) {
+    final nameController = TextEditingController(text: controller.userName.value);
+    final emailController = TextEditingController(text: controller.userEmail.value);
+    final gradeController = TextEditingController(text: controller.userYear.value);
 
-  void _showEditProfileDialog() {
-    final nameController = TextEditingController(text: userName);
-    final emailController = TextEditingController(text: userEmail);
-    final gradeController = TextEditingController(text: userYear);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+    Get.dialog(
+      AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Edit Profile'),
         content: Column(
@@ -512,17 +600,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Get.back(),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                userName = nameController.text;
-                userEmail = emailController.text;
-                userYear = gradeController.text;
-              });
-              Navigator.pop(context);
+              controller.updateProfile(
+                nameController.text,
+                emailController.text,
+                gradeController.text,
+              );
+              Get.back();
             },
             child: const Text('Save'),
           ),
@@ -531,72 +619,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-
-  void _exportData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data exported successfully!')),
-    );
-  }
-
-  void _backupData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data backed up to cloud!')),
-    );
-  }
-
-  void _shareProgress() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Progress shared!')),
-    );
-  }
-
-  void _showPrivacySettings() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Privacy settings opened')),
-    );
-  }
-
-  void _showHelpAndSupport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Help & Support opened')),
-    );
-  }
-
   void _showAboutDialog() {
-    showAboutDialog(
-      context: context,
-      applicationName: 'SmartPace',
-      applicationVersion: '1.0.0',
-      applicationIcon: const Icon(Icons.school, size: 32),
-      children: [
-        const Text('A simple app to plan and track your study sessions, form or join study groups, chat with study mates and improve your learning habits.'),
-      ],
-    );
-  }
-
-  void _signOut() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Add sign out logic here
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Signed out successfully!')),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Sign Out'),
-          ),
+    Get.dialog(
+      AboutDialog(
+        applicationName: 'SmartPace',
+        applicationVersion: '1.0.0',
+        applicationIcon: const Icon(Icons.school, size: 32),
+        children: const [
+          Text('A simple app to plan and track your study sessions, form or join study groups, chat with study mates and improve your learning habits.'),
         ],
       ),
     );

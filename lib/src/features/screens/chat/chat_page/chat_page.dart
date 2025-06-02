@@ -28,7 +28,7 @@ enum MessageType { text, audio, image, file }
 class IndividualChatController extends GetxController {
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
-   final ImagePicker _picker = ImagePicker();
+   // final ImagePicker _picker = ImagePicker();
 
   var messages = <Message>[
     Message(
@@ -112,7 +112,7 @@ class IndividualChatController extends GetxController {
   }
 
   Future<void> pickImage(source) async {
-    try {
+    /*try {
       final XFile? image = await _picker.pickImage(source: source);
       if (image != null) {
         sendMessage(
@@ -124,11 +124,11 @@ class IndividualChatController extends GetxController {
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to pick image');
-    }
+    } */
   }
 
   Future<void> pickFile() async {
-    try {
+    /*try {
       FilePickerResult? result = await FilePicker.platform.pickFiles();
       if (result != null) {
         PlatformFile file = result.files.first;
@@ -141,7 +141,7 @@ class IndividualChatController extends GetxController {
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to pick file');
-    }
+    }*/
   }
 
   @override
@@ -564,8 +564,8 @@ class IndividualChatPage extends StatelessWidget {
                   label: 'Camera',
                   color: Colors.red,
                   onTap: () {
-                    Navigator.pop(context);
-                    controller.pickImage(ImageSource.camera);
+                     Navigator.pop(context);
+                    //controller.pickImage(ImageSource.camera);
                   },
                 ),
                 _buildAttachmentOption(
@@ -574,7 +574,7 @@ class IndividualChatPage extends StatelessWidget {
                   color: Colors.purple,
                   onTap: () {
                     Navigator.pop(context);
-                    controller.pickImage(ImageSource.gallery);
+                    //controller.pickImage(ImageSource.gallery);
                   },
                 ),
                 _buildAttachmentOption(
