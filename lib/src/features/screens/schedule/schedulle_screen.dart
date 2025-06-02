@@ -11,7 +11,7 @@ import 'widgets/weekly_view.dart';
 class PlannerScreen extends StatelessWidget {
   final PlannerController controller = Get.put(PlannerController());
 
-  PlannerScreen({Key? key}) : super(key: key);
+  PlannerScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
