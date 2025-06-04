@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:smart_pace/src/features/screens/groups/groups_page.dart';
 
-import '../../features/screens/chat/chat_widgets/models/chat_screen.dart';
-// import '../../features/screens/chat/chats.dart';
+import '../../features/screens/chat/chats.dart';
 import '../../features/screens/home/home.dart';
 import '../../features/screens/profile/profile.dart';
 import '../../features/screens/schedule/schedulle_screen.dart';
 
-// Navigation Controller using GetX
 class NavigationController extends GetxController {
   var selectedIndex = 0.obs;
 
@@ -20,6 +19,7 @@ class NavigationController extends GetxController {
     'SmartPace',
     'Schedule',
     'Chats',
+    'Groups'
     'Profile',
   ];
 
@@ -30,13 +30,14 @@ class NavigationController extends GetxController {
 class MainNavigation extends StatelessWidget {
   final NavigationController navController = Get.put(NavigationController());
 
-  MainNavigation({Key? key}) : super(key: key);
+  MainNavigation({super.key});
 
   // List of pages/widgets for navigation
   final List<Widget> pages = [
     HomeScreen(),
     PlannerScreen(),
     ChatScreen(),
+    GroupsPage(),
     ProfileScreen(),
   ];
 
@@ -86,6 +87,11 @@ class MainNavigation extends StatelessWidget {
               icon: Icon(Icons.chat_outlined),
               activeIcon: Icon(Icons.chat),
               label: "Chats",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.group_outlined),
+              activeIcon: Icon(Icons.group),
+              label: "Groups",
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),

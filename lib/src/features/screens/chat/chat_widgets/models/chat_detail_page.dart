@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_pace/src/features/screens/chat/chat_widgets/models/message_bubble.dart' show MessageBubble;
-import '../app_colors.dart';
+import '../../../../../constants/app_colors.dart';
 import '../controller/chat_detail_controller.dart';
 import 'chat_message.dart';
 
