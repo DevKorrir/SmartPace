@@ -8,7 +8,7 @@ import 'chat_widgets/models/chat_tile.dart';
 class ChatScreen extends StatelessWidget {
   final ChatController controller = Get.put(ChatController());
 
-  ChatScreen({Key? key}) : super(key: key);
+  ChatScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
