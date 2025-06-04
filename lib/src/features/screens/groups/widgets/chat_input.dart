@@ -195,7 +195,6 @@ class ChatInput extends StatelessWidget {
   }
 
   void _handleImageAttachment() {
-    // Simulate image attachment
     onSendAttachment('image.jpg', '/path/to/image.jpg');
     Get.snackbar(
       'Image Sent',
@@ -207,7 +206,6 @@ class ChatInput extends StatelessWidget {
   }
 
   void _handleCameraAttachment() {
-    // Simulate camera attachment
     onSendAttachment('camera_photo.jpg', '/path/to/camera_photo.jpg');
     Get.snackbar(
       'Photo Sent',
@@ -219,7 +217,6 @@ class ChatInput extends StatelessWidget {
   }
 
   void _handleDocumentAttachment() {
-    // Simulate document attachment
     onSendAttachment('document.pdf', '/path/to/document.pdf');
     Get.snackbar(
       'Document Sent',

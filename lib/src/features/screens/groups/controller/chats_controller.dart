@@ -13,7 +13,6 @@ class GroupChatController extends GetxController {
   var messageController = TextEditingController();
   ScrollController? scrollController;
   
-  // Function to set scroll controller
   void Function(ScrollController)? setScrollController;
 
   GroupChatController({required this.group}) {

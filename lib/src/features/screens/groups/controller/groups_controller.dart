@@ -56,7 +56,7 @@ class GroupsController extends GetxController {
     ),
   ].obs;
 
-  // Available groups to join
+  //Mock Groups to join
   var availableGroups = <StudyGroupModel>[
     StudyGroupModel(
       id: '5',
