@@ -24,7 +24,6 @@ class GroupChatController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Try to find the groups controller, but don't fail if it's not found
     try {
       groupsController = Get.find<GroupsController>();
     } catch (e) {
