@@ -1,7 +1,6 @@
 name: smart_pace
-description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
+description: "SmartPace Student Planner App."
+
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 
@@ -20,6 +19,9 @@ dependencies:
   get:
   flutter_otp_text_field: ^1.5.1+1
   google_fonts: ^6.1.0
+  firebase_auth: ^5.5.4
+  firebase_storage: ^12.4.6
+  firebase_core: ^3.13.1
 
 
 dev_dependencies:
@@ -44,17 +46,7 @@ flutter:
     - assets/logo/
   #   - images/a_dot_ham.jpeg
 
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
+  
   # fonts:
   #   - family: Schyler
   #     fonts:
@@ -67,8 +59,7 @@ flutter:
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+  
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
