@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:smart_pace/src/features/authentication/auth_repository/auth_repository.dart';
 
 import '../../screens/auth/login/login.dart';
 
@@ -127,25 +128,26 @@ class SignUpController extends GetxController {
       );
       return;
     }
-    
+
     try {
       isLoading.value = true;
-      
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Success - Show success message and navigate to login
+
+      // Call registerUser with actual email and password values
+      // Replace these with your actual form field values
+      await registerUser(emailController.text, passwordController.text);
+
+      // Success - Show success message
       Get.snackbar(
         'Success',
-        'Account created successfully! Please login.',
+        'Account created successfully',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green[100],
         colorText: Colors.green[800],
       );
-      
-      // Navigate to login screen
-      Get.to(() => const Login());
-      
+
+      // Navigate to login screen or home (handled by AuthRepository)
+      // Get.to(() => const Login());
+
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -157,6 +159,11 @@ class SignUpController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+// Make registerUser async and await the AuthRepository call
+  Future<void> registerUser(String email, String password) async {
+    await AuthRepository.instance.createUserWithEmailAndPassword(email, password);
   }
   
   // Handle Google Sign Up
