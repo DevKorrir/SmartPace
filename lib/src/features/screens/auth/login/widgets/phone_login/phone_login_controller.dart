@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:async';
 
+import 'package:smart_pace/src/routing/navigation/navigation.dart';
+import '../../../../../authentication/auth_repository/auth_repository.dart';
+import 'widgets/repo/authentication_repository.dart';
+
 class PhoneLoginController extends GetxController with GetTickerProviderStateMixin {
   // Text Controllers
   final phoneController = TextEditingController();
@@ -18,6 +22,9 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
   late AnimationController slideController;
   late Animation<Offset> slideAnimation;
   Timer? _timer;
+
+  // Auth repository instance
+  final _authRepo = AuthRepository.instance;
 
   // Getters for reactive variables
   bool get isOtpSent => _isOtpSent.value;
@@ -71,11 +78,10 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
     _isLoading.value = true;
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      String phoneNumber = _formatPhoneNumber(phoneController.text.trim());
 
-      // TODO: Implement actual OTP sending logic here
-      // Example: await FirebaseAuth.instance.verifyPhoneNumber(...)
+      // Call Firebase phone authentication
+      await _authRepo.phoneAuthentication(phoneNumber);
 
       _isOtpSent.value = true;
       _isLoading.value = false;
@@ -93,7 +99,7 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
       _isLoading.value = false;
       _showSnackbar(
         'Error',
-        'Failed to send OTP. Please try again.',
+        'Failed to send OTP: ${e.toString()}',
         Colors.red,
       );
     }
@@ -112,20 +118,31 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
     _isLoading.value = true;
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      // Verify OTP using AuthRepository
+      bool isVerified = await _authRepo.verifyOtp(otpController.text.trim());
 
-      // TODO: Implement actual OTP verification logic here
-      // Example: await credential.signInWithCredential(...)
+      _isLoading.value = false;
 
-      // Navigate to home screen or dashboard
-      Get.offAllNamed('/home'); // Replace with your home route
-
+      if (isVerified) {
+        // Navigate to main navigation on successful verification
+        Get.offAll(() => MainNavigation());
+        _showSnackbar(
+          'Success',
+          'Phone number verified successfully!',
+          Colors.green,
+        );
+      } else {
+        _showSnackbar(
+          'Verification Failed',
+          'Invalid OTP. Please try again.',
+          Colors.red,
+        );
+      }
     } catch (e) {
       _isLoading.value = false;
       _showSnackbar(
         'Verification Failed',
-        'Invalid OTP. Please try again.',
+        'Error verifying OTP: ${e.toString()}',
         Colors.red,
       );
     }
@@ -137,10 +154,11 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
     _isResendingOtp.value = true;
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      // Format phone number and resend OTP using the dedicated resend method
+      String phoneNumber = _formatPhoneNumber(phoneController.text.trim());
 
-      // TODO: Implement actual OTP resending logic here
+      // Use the dedicated resendOtp method from AuthRepository
+      await _authRepo.resendOtp(phoneNumber);
 
       _isResendingOtp.value = false;
       _startResendTimer();
@@ -154,10 +172,44 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
       _isResendingOtp.value = false;
       _showSnackbar(
         'Error',
-        'Failed to resend OTP. Please try again.',
+        'Failed to resend OTP: ${e.toString()}',
         Colors.red,
       );
     }
+  }
+
+  void phoneAuthentication(String phoneNo) {
+    AuthenticationRepository.instance.phoneAuthentication(phoneNo);
+  }
+
+  // Helper method to format phone number with country code
+  String _formatPhoneNumber(String phoneNumber) {
+    // Remove any non-digit characters
+    phoneNumber = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (!phoneNumber.startsWith('254') && !phoneNumber.startsWith('+254')) {
+      // Remove leading zero if present
+      if (phoneNumber.startsWith('0')) {
+        phoneNumber = phoneNumber.substring(1);
+      }
+      phoneNumber = '+254$phoneNumber';
+    } else if (phoneNumber.startsWith('254')) {
+      phoneNumber = '+$phoneNumber';
+    }
+
+    return phoneNumber;
+  }
+
+  // Reset the form to initial state
+  void resetForm() {
+    phoneController.clear();
+    otpController.clear();
+    _isOtpSent.value = false;
+    _isLoading.value = false;
+    _isResendingOtp.value = false;
+    _resendTimer.value = 0;
+    _timer?.cancel();
+    slideController.reset();
   }
 
   void _showSnackbar(String title, String message, Color backgroundColor) {
@@ -168,6 +220,8 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
       backgroundColor: backgroundColor,
       colorText: Colors.white,
       duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(10),
+      borderRadius: 8,
     );
   }
 
@@ -175,9 +229,28 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
     if (value == null || value.isEmpty) {
       return 'Please enter your phone number';
     }
-    if (value.length < 9) {
+
+    // Remove non-digit characters for validation
+    String digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Validate Kenyan phone number format
+    if (digitsOnly.length < 9 || digitsOnly.length > 12) {
       return 'Please enter a valid phone number';
     }
+
+    // Check if it's a valid Kenyan number format
+    if (digitsOnly.startsWith('254')) {
+      if (digitsOnly.length != 12) {
+        return 'Please enter a valid phone number';
+      }
+    } else if (digitsOnly.startsWith('0')) {
+      if (digitsOnly.length != 10) {
+        return 'Please enter a valid phone number';
+      }
+    } else if (digitsOnly.length != 9) {
+      return 'Please enter a valid phone number';
+    }
+
     return null;
   }
 }

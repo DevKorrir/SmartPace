@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "153300551973",
+    "project_id": "smartpace-65385",
+    "storage_bucket": "smartpace-65385.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:153300551973:android:0110d7d657df1fb89fb2cc",
+        "android_client_info": {
+          "package_name": "com.example.smart_pace"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZfxoDlEYRdrdtIAFk0GYOHFRGjwRK5z8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

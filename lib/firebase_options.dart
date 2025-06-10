@@ -65,4 +65,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'smartpace-65385.firebasestorage.app',
     iosBundleId: 'com.example.smartPace',
   );
+
 }
