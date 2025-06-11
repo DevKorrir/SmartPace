@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:smart_pace/src/routing/navigation/navigation.dart';
 import '../../../../../authentication/auth_repository/auth_repository.dart';
-import 'widgets/repo/authentication_repository.dart';
 
 class PhoneLoginController extends GetxController with GetTickerProviderStateMixin {
   // Text Controllers
@@ -79,72 +78,41 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
 
     try {
       String phoneNumber = _formatPhoneNumber(phoneController.text.trim());
-
-      // Call Firebase phone authentication
       await _authRepo.phoneAuthentication(phoneNumber);
 
       _isOtpSent.value = true;
-      _isLoading.value = false;
-
       slideController.forward();
       _startResendTimer();
 
-      // Show success message
-      _showSnackbar(
-        'OTP Sent',
-        'Verification code sent to ${phoneController.text}',
-        Colors.green,
-      );
+      _showSuccessMessage('OTP sent to ${phoneController.text}');
     } catch (e) {
+      _showErrorMessage('Failed to send OTP: ${e.toString()}');
+    } finally {
       _isLoading.value = false;
-      _showSnackbar(
-        'Error',
-        'Failed to send OTP: ${e.toString()}',
-        Colors.red,
-      );
     }
   }
 
   Future<void> verifyOtp() async {
     if (otpController.text.length != 6) {
-      _showSnackbar(
-        'Invalid OTP',
-        'Please enter a valid 6-digit OTP',
-        Colors.orange,
-      );
+      _showErrorMessage('Please enter a valid 6-digit OTP');
       return;
     }
 
     _isLoading.value = true;
 
     try {
-      // Verify OTP using AuthRepository
       bool isVerified = await _authRepo.verifyOtp(otpController.text.trim());
 
-      _isLoading.value = false;
-
       if (isVerified) {
-        // Navigate to main navigation on successful verification
         Get.offAll(() => MainNavigation());
-        _showSnackbar(
-          'Success',
-          'Phone number verified successfully!',
-          Colors.green,
-        );
+        _showSuccessMessage('Phone number verified successfully!');
       } else {
-        _showSnackbar(
-          'Verification Failed',
-          'Invalid OTP. Please try again.',
-          Colors.red,
-        );
+        _showErrorMessage('Invalid OTP. Please try again.');
       }
     } catch (e) {
+      _showErrorMessage('Error verifying OTP: ${e.toString()}');
+    } finally {
       _isLoading.value = false;
-      _showSnackbar(
-        'Verification Failed',
-        'Error verifying OTP: ${e.toString()}',
-        Colors.red,
-      );
     }
   }
 
@@ -154,41 +122,23 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
     _isResendingOtp.value = true;
 
     try {
-      // Format phone number and resend OTP using the dedicated resend method
       String phoneNumber = _formatPhoneNumber(phoneController.text.trim());
-
-      // Use the dedicated resendOtp method from AuthRepository
       await _authRepo.resendOtp(phoneNumber);
 
-      _isResendingOtp.value = false;
       _startResendTimer();
-
-      _showSnackbar(
-        'OTP Resent',
-        'New verification code sent to ${phoneController.text}',
-        Colors.green,
-      );
+      _showSuccessMessage('New OTP sent to ${phoneController.text}');
     } catch (e) {
+      _showErrorMessage('Failed to resend OTP: ${e.toString()}');
+    } finally {
       _isResendingOtp.value = false;
-      _showSnackbar(
-        'Error',
-        'Failed to resend OTP: ${e.toString()}',
-        Colors.red,
-      );
     }
-  }
-
-  void phoneAuthentication(String phoneNo) {
-    AuthenticationRepository.instance.phoneAuthentication(phoneNo);
   }
 
   // Helper method to format phone number with country code
   String _formatPhoneNumber(String phoneNumber) {
-    // Remove any non-digit characters
     phoneNumber = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (!phoneNumber.startsWith('254') && !phoneNumber.startsWith('+254')) {
-      // Remove leading zero if present
       if (phoneNumber.startsWith('0')) {
         phoneNumber = phoneNumber.substring(1);
       }
@@ -212,12 +162,27 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
     slideController.reset();
   }
 
-  void _showSnackbar(String title, String message, Color backgroundColor) {
+  // Simplified success message helper
+  void _showSuccessMessage(String message) {
     Get.snackbar(
-      title,
+      'Success',
       message,
       snackPosition: SnackPosition.TOP,
-      backgroundColor: backgroundColor,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(10),
+      borderRadius: 8,
+    );
+  }
+
+  // Simplified error message helper
+  void _showErrorMessage(String message) {
+    Get.snackbar(
+      'Error',
+      message,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.red,
       colorText: Colors.white,
       duration: const Duration(seconds: 3),
       margin: const EdgeInsets.all(10),
@@ -230,10 +195,8 @@ class PhoneLoginController extends GetxController with GetTickerProviderStateMix
       return 'Please enter your phone number';
     }
 
-    // Remove non-digit characters for validation
     String digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
 
-    // Validate Kenyan phone number format
     if (digitsOnly.length < 9 || digitsOnly.length > 12) {
       return 'Please enter a valid phone number';
     }

@@ -4,6 +4,7 @@ import 'package:smart_pace/src/features/authentication/auth_repository/exception
 import 'package:smart_pace/src/features/screens/welcome/welcome.dart';
 import 'package:smart_pace/src/routing/navigation/navigation.dart';
 import '../../screens/splash/splash_screen.dart';
+import 'package:flutter/material.dart';
 
 class AuthRepository extends GetxController {
   static AuthRepository get instance => Get.find();
@@ -30,57 +31,109 @@ class AuthRepository extends GetxController {
 
   Future<void> phoneAuthentication(String phoneNo) async {
     try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNo,
-        timeout: const Duration(seconds: 60),
+      print('=== Starting phone authentication ===');
+      print('Phone number: $phoneNo');
 
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          try {
-            await _auth.signInWithCredential(credential);
-            Get.snackbar(
-              "Success",
-              "Phone number verified automatically",
-              snackPosition: SnackPosition.TOP,
-            );
-          } catch (e) {
-            Get.snackbar(
-              "Error",
-              "Auto-verification failed: ${e.toString()}",
-              snackPosition: SnackPosition.TOP,
-            );
-          }
-        },
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _verifyPhoneNumber(phoneNo, null);
+      print('=== verifyPhoneNumber call completed ===');
+    } catch (e) {
+      print('=== Exception in phoneAuthentication ===');
+      print('Error: $e');
+      throw e.toString();
+    }
+  }
 
-        codeSent: (String verificationId, int? resendToken) {
-          this.verificationId.value = verificationId;
-          this.resendToken.value = resendToken;
-          print('OTP sent successfully. Verification ID: $verificationId');
-        },
-
-        codeAutoRetrievalTimeout: (String verificationId) {
-          this.verificationId.value = verificationId;
-          print('Auto-retrieval timeout. Verification ID: $verificationId');
-        },
-
-        verificationFailed: (FirebaseAuthException e) {
-          print('Verification failed: ${e.code} - ${e.message}');
-
-          switch (e.code) {
-            case 'invalid-phone-number':
-              throw 'The provided phone number is not valid.';
-            case 'too-many-requests':
-              throw 'Too many requests. Please try again later.';
-            case 'quota-exceeded':
-              throw 'SMS quota exceeded. Please try again later.';
-            case 'network-request-failed':
-              throw 'Network error. Please check your connection.';
-            default:
-              throw 'Verification failed: ${e.message ?? 'Unknown error'}';
-          }
-        },
-      );
+  Future<void> resendOtp(String phoneNo) async {
+    try {
+      await _verifyPhoneNumber(phoneNo, resendToken.value);
     } catch (e) {
       throw e.toString();
+    }
+  }
+
+  // Common method for phone verification to avoid repetition
+  Future<void> _verifyPhoneNumber(String phoneNo, int? forceResendingToken) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNo,
+      timeout: Duration(seconds: forceResendingToken != null ? 60 : 120),
+      forceResendingToken: forceResendingToken,
+
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        print('=== AUTO VERIFICATION COMPLETED ===');
+        try {
+          await _auth.signInWithCredential(credential);
+          _showSnackbar(
+            "Success",
+            "Phone number verified automatically",
+            Colors.green,
+          );
+        } catch (e) {
+          print('Auto-verification error: $e');
+          _showSnackbar(
+            "Error",
+            "Auto-verification failed: ${e.toString()}",
+            Colors.red,
+          );
+        }
+      },
+
+      codeSent: (String verificationId, int? resendToken) {
+        print('=== CODE SENT CALLBACK TRIGGERED ===');
+        print('Verification ID: $verificationId');
+        print('SMS should be sent now');
+
+        this.verificationId.value = verificationId;
+        this.resendToken.value = resendToken;
+
+        String message = forceResendingToken != null
+            ? "New verification code sent successfully"
+            : "Verification code sent successfully";
+
+        _showSnackbar("OTP Sent", message, Colors.green);
+      },
+
+      codeAutoRetrievalTimeout: (String verificationId) {
+        print('=== AUTO RETRIEVAL TIMEOUT ===');
+        print('Verification ID: $verificationId');
+        this.verificationId.value = verificationId;
+      },
+
+      verificationFailed: (FirebaseAuthException e) {
+        print('=== VERIFICATION FAILED ===');
+        print('Error code: ${e.code}');
+        print('Error message: ${e.message}');
+        throw _getPhoneAuthErrorMessage(e);
+      },
+    );
+  }
+
+  // Centralized error handling for phone authentication
+  String _getPhoneAuthErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-phone-number':
+        return 'The provided phone number is not valid.';
+      case 'too-many-requests':
+        return 'Too many requests. Please try again later.';
+      case 'quota-exceeded':
+        return 'SMS quota exceeded. Please try again later.';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection and try again.';
+      case 'app-not-authorized':
+        return 'App not authorized. Please check Firebase configuration.';
+      case 'captcha-check-failed':
+        return 'reCAPTCHA verification failed. Please try again.';
+      case 'web-context-already-presented':
+        return 'Please close the previous verification window and try again.';
+      case 'web-context-cancelled':
+        return 'Verification cancelled. Please try again.';
+      case 'unknown':
+        if (e.message?.contains('BILLING_NOT_ENABLED') == true) {
+          return 'SMS service requires a paid Firebase plan. Please upgrade to Blaze plan or use test phone numbers.';
+        }
+        return 'Verification failed: ${e.message ?? 'Unknown error'}';
+      default:
+        return 'Verification failed: ${e.message ?? 'Unknown error'}';
     }
   }
 
@@ -109,76 +162,25 @@ class AuthRepository extends GetxController {
       }
     } on FirebaseAuthException catch (e) {
       print('OTP verification failed: ${e.code} - ${e.message}');
-
-      switch (e.code) {
-        case 'invalid-verification-code':
-          throw 'The verification code is invalid. Please try again.';
-        case 'invalid-verification-id':
-          throw 'The verification session has expired. Please request a new OTP.';
-        case 'session-expired':
-          throw 'The verification session has expired. Please request a new OTP.';
-        case 'too-many-requests':
-          throw 'Too many failed attempts. Please try again later.';
-        default:
-          throw 'OTP verification failed: ${e.message ?? 'Unknown error'}';
-      }
+      throw _getOtpVerificationErrorMessage(e);
     } catch (e) {
       throw 'An unexpected error occurred: ${e.toString()}';
     }
   }
 
-  // Enhanced resend OTP method
-  Future<void> resendOtp(String phoneNo) async {
-    try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNo,
-        timeout: const Duration(seconds: 60),
-        forceResendingToken: resendToken.value,
-
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          try {
-            await _auth.signInWithCredential(credential);
-            Get.snackbar(
-              "Success",
-              "Phone number verified automatically",
-              snackPosition: SnackPosition.TOP,
-            );
-          } catch (e) {
-            Get.snackbar(
-              "Error",
-              "Auto-verification failed: ${e.toString()}",
-              snackPosition: SnackPosition.TOP,
-            );
-          }
-        },
-
-        codeSent: (String verificationId, int? resendToken) {
-          this.verificationId.value = verificationId;
-          this.resendToken.value = resendToken;
-          print('OTP resent successfully. New Verification ID: $verificationId');
-        },
-
-        codeAutoRetrievalTimeout: (String verificationId) {
-          this.verificationId.value = verificationId;
-        },
-
-        verificationFailed: (FirebaseAuthException e) {
-          print('Resend failed: ${e.code} - ${e.message}');
-
-          switch (e.code) {
-            case 'invalid-phone-number':
-              throw 'The provided phone number is not valid.';
-            case 'too-many-requests':
-              throw 'Too many requests. Please try again later.';
-            case 'quota-exceeded':
-              throw 'SMS quota exceeded. Please try again later.';
-            default:
-              throw 'Resend failed: ${e.message ?? 'Unknown error'}';
-          }
-        },
-      );
-    } catch (e) {
-      throw e.toString();
+  // Centralized error handling for OTP verification
+  String _getOtpVerificationErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-verification-code':
+        return 'The verification code is invalid. Please try again.';
+      case 'invalid-verification-id':
+        return 'The verification session has expired. Please request a new OTP.';
+      case 'session-expired':
+        return 'The verification session has expired. Please request a new OTP.';
+      case 'too-many-requests':
+        return 'Too many failed attempts. Please try again later.';
+      default:
+        return 'OTP verification failed: ${e.message ?? 'Unknown error'}';
     }
   }
 
@@ -225,16 +227,27 @@ class AuthRepository extends GetxController {
   Future<void> logOut() async {
     try {
       await _auth.signOut();
-      // Clear verification data on logout
-      verificationId.value = '';
-      resendToken.value = null;
+      clearVerificationData();
     } catch (e) {
       print('Logout failed: ${e.toString()}');
       throw 'Logout failed: ${e.toString()}';
     }
   }
 
-  // Additional utility methods
+  void _showSnackbar(String title, String message, Color backgroundColor) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: backgroundColor,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(10),
+      borderRadius: 8,
+    );
+  }
+
+  // Utility getters and methods
   User? get currentUser => _auth.currentUser;
   bool get isSignedIn => _auth.currentUser != null;
   String? get currentUserPhone => _auth.currentUser?.phoneNumber;

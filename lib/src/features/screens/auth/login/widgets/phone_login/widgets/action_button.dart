@@ -33,7 +33,17 @@ class ActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: controller.isLoading
               ? null
-              : (controller.isOtpSent ? controller.verifyOtp : controller.sendOtp),
+              : () {
+            if (controller.formKey.currentState!.validate()) {
+              if (!controller.isOtpSent) {
+                // Send OTP and show dropdown section instead of navigating
+                controller.sendOtp();
+              } else {
+                // Verify OTP
+                controller.verifyOtp();
+              }
+            }
+          },
           child: Container(
             alignment: Alignment.center,
             child: controller.isLoading
@@ -54,7 +64,7 @@ class ActionButton extends StatelessWidget {
               ),
             ),
           ),
-        )),
+        ),),
       ),
     );
   }

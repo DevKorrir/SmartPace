@@ -22,7 +22,6 @@ class ModernButton extends StatefulWidget {
 class ModernButtonState extends State<ModernButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -31,13 +30,7 @@ class ModernButtonState extends State<ModernButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+
   }
 
   @override
@@ -50,9 +43,8 @@ class ModernButtonState extends State<ModernButton>
   Widget build(BuildContext context) {
     
 
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: GestureDetector(
+    return
+       GestureDetector(
         onTapDown: (_) => _controller.forward(),
         onTapUp: (_) => _controller.reverse(),
         onTapCancel: () => _controller.reverse(),
@@ -110,7 +102,6 @@ class ModernButtonState extends State<ModernButton>
             ),
           ),
         ),
-      ),
     );
   }
 }
