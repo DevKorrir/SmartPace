@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../routing/navigation/navigation.dart';
+import '../../../authentication/auth_repository/auth_repository.dart';
 import '../../../forgot_password/forgot_password_options/forgot_password_model_bottom_sheet.dart';
 import '../signup/sign_up.dart';
 
@@ -16,9 +17,9 @@ class LoginController extends GetxController {
 
   bool get isFormValid =>
       emailController.text.isNotEmpty &&
-      passwordController.text.isNotEmpty &&
-      emailError.value.isEmpty &&
-      passwordError.value.isEmpty;
+          passwordController.text.isNotEmpty &&
+          emailError.value.isEmpty &&
+          passwordError.value.isEmpty;
 
   // Toggle password visibility
   void togglePasswordVisibility() {
@@ -47,7 +48,7 @@ class LoginController extends GetxController {
     }
   }
 
-  // Handle login
+  // Handle login with Firebase
   Future<void> handleLogin() async {
     if (!isFormValid) {
       Get.snackbar(
@@ -63,11 +64,13 @@ class LoginController extends GetxController {
     try {
       isLoading.value = true;
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
 
-      // Success - Navigate to main screen
-      Get.to(() => MainNavigation());
+      await AuthRepository.instance.loginUserWithEmailAndPassword(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+
+      Get.offAll(() => MainNavigation());
 
       Get.snackbar(
         'Success',
@@ -78,23 +81,22 @@ class LoginController extends GetxController {
       );
     } catch (e) {
       Get.snackbar(
-        'Error',
-        'Login failed. Please try again.',
+        'Login Failed',
+        e.toString(),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[800],
+        duration: const Duration(seconds: 4),
       );
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Handle Google Sign In
   Future<void> handleGoogleSignIn() async {
     try {
       isLoading.value = true;
 
-      // Simulate Google Sign In
       await Future.delayed(const Duration(seconds: 1));
 
       Get.offAll(() => MainNavigation());

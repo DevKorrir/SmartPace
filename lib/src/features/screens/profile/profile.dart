@@ -17,7 +17,7 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Profile'),
+        title:  Text('Profile', style: Theme.of(context).textTheme.headlineSmall,),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black87,
@@ -36,6 +36,9 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+      drawer: Drawer(
+        backgroundColor: Colors.black54,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
