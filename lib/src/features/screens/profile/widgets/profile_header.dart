@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:smart_pace/src/features/screens/profile/widgets/update_profile.dart';
 
 import '../controllers/profile-controller.dart';
 
@@ -43,7 +44,7 @@ class ProfileHeader extends StatelessWidget {
                             ),
                           )
                           : ClipOval(
-                            child: Image.network(
+                            child: Image.asset(
                               controller.profileImageUrl.value,
                               width: 100,
                               height: 100,
@@ -112,7 +113,8 @@ class ProfileHeader extends StatelessWidget {
 
           // Edit Profile Button
           ElevatedButton.icon(
-            onPressed: () => _showEditProfileDialog(controller),
+            onPressed: () => Get.to(UpdateProfile()),
+
             icon: const Icon(Icons.edit, size: 18),
             label: const Text('Edit Profile'),
             style: ElevatedButton.styleFrom(
@@ -128,10 +130,17 @@ class ProfileHeader extends StatelessWidget {
       ),
     );
   }
-   void _showEditProfileDialog(ProfileController controller) {
-    final nameController = TextEditingController(text: controller.userName.value);
-    final emailController = TextEditingController(text: controller.userEmail.value);
-    final gradeController = TextEditingController(text: controller.userYear.value);
+
+  void _showEditProfileDialog(ProfileController controller) {
+    final nameController = TextEditingController(
+      text: controller.userName.value,
+    );
+    final emailController = TextEditingController(
+      text: controller.userEmail.value,
+    );
+    final gradeController = TextEditingController(
+      text: controller.userYear.value,
+    );
 
     Get.dialog(
       AlertDialog(
@@ -144,7 +153,9 @@ class ProfileHeader extends StatelessWidget {
               controller: nameController,
               decoration: InputDecoration(
                 labelText: 'Full Name',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -152,7 +163,9 @@ class ProfileHeader extends StatelessWidget {
               controller: emailController,
               decoration: InputDecoration(
                 labelText: 'Email',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -160,16 +173,15 @@ class ProfileHeader extends StatelessWidget {
               controller: gradeController,
               decoration: InputDecoration(
                 labelText: 'Year',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               controller.updateProfile(

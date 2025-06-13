@@ -132,8 +132,6 @@ class SignUpController extends GetxController {
     try {
       isLoading.value = true;
 
-      // Call registerUser with actual email and password values
-      // Replace these with your actual form field values
       await registerUser(emailController.text, passwordController.text);
 
       // Success - Show success message
