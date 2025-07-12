@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smart_pace/src/features/authentication/auth_repository/auth_repository.dart';
 
 import '../../screens/auth/login/login.dart';
@@ -116,7 +117,7 @@ class SignUpController extends GetxController {
     }
   }
   
-  // Handle sign up
+  // Handle sign up with proper exception handling
   Future<void> handleSignUp() async {
     if (!isFormValid) {
       Get.snackbar(
@@ -137,19 +138,35 @@ class SignUpController extends GetxController {
       // Success - Show success message
       Get.snackbar(
         'Success',
-        'Account created successfully',
+        'Account created successfully! Welcome to SmartPace!',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green[100],
         colorText: Colors.green[800],
+        duration: const Duration(seconds: 3),
       );
 
-      // Navigate to login screen or home (handled by AuthRepository)
-      // Get.to(() => const Login());
+      // Navigate to login screen or home
+      Get.to(() => const Login());
 
+    } on FirebaseAuthException catch (e) {
+      // Handle specific Firebase Auth exceptions
+      String errorMessage = _getFirebaseAuthErrorMessage(e.code);
+      
+      Get.snackbar(
+        'Sign Up Failed',
+        errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[800],
+        duration: const Duration(seconds: 4),
+        margin: const EdgeInsets.all(16),
+      );
+      
     } catch (e) {
+      // Handle other exceptions
       Get.snackbar(
         'Error',
-        'Sign up failed. Please try again.',
+        'An unexpected error occurred. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[800],
@@ -159,31 +176,81 @@ class SignUpController extends GetxController {
     }
   }
 
-// Make registerUser async and await the AuthRepository call
+  // Get user-friendly error messages for Firebase Auth errors
+  String _getFirebaseAuthErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'email-already-in-use':
+        return 'This email address is already registered. Please use a different email or try signing in.';
+      case 'weak-password':
+        return 'The password is too weak. Please choose a stronger password with at least 6 characters.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'operation-not-allowed':
+        return 'Email/password accounts are not enabled. Please contact support.';
+      case 'user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'too-many-requests':
+        return 'Too many failed attempts. Please try again later.';
+      case 'network-request-failed':
+        return 'Network error. Please check your internet connection and try again.';
+      case 'invalid-credential':
+        return 'Invalid credentials provided. Please check your information.';
+      case 'requires-recent-login':
+        return 'Please log in again to complete this action.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with this email but different sign-in credentials.';
+      case 'credential-already-in-use':
+        return 'This credential is already associated with a different account.';
+      case 'invalid-verification-code':
+        return 'Invalid verification code. Please try again.';
+      case 'invalid-verification-id':
+        return 'Invalid verification ID. Please try again.';
+      default:
+        return 'Authentication failed: ${errorCode.replaceAll('-', ' ')}. Please try again.';
+    }
+  }
+
+  // Make registerUser async and await the AuthRepository call
   Future<void> registerUser(String email, String password) async {
     await AuthRepository.instance.createUserWithEmailAndPassword(email, password);
   }
   
-  // Handle Google Sign Up
+  // Handle Google Sign Up with proper exception handling
   Future<void> handleGoogleSignUp() async {
     try {
       isLoading.value = true;
       
-      // Simulate Google Sign Up
+      // Call your Google sign-in method here
+      // Example: await AuthRepository.instance.signInWithGoogle();
+      
+      // For now, simulate the process
       await Future.delayed(const Duration(seconds: 1));
       
       Get.snackbar(
         'Success',
-        'Account created with Google!',
+        'Account created with Google successfully!',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green[100],
         colorText: Colors.green[800],
+        duration: const Duration(seconds: 3),
       );
       
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = _getFirebaseAuthErrorMessage(e.code);
+      
+      Get.snackbar(
+        'Google Sign Up Failed',
+        errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[800],
+        duration: const Duration(seconds: 4),
+        margin: const EdgeInsets.all(16),
+      );
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Google Sign Up failed',
+        'Google Sign Up failed. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[800],

@@ -1,10 +1,11 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smart_pace/src/features/authentication/auth_repository/exceptions/sign_up_email_and_password_failure.dart';
-import 'package:smart_pace/src/features/screens/welcome/welcome.dart';
 import 'package:smart_pace/src/routing/navigation/navigation.dart';
-import '../../screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
+
+import '../../screens/auth/login/login.dart';
+import '../../screens/welcome_screen/welcome_screen.dart';
 
 class AuthRepository extends GetxController {
   static AuthRepository get instance => Get.find();
@@ -20,14 +21,14 @@ class AuthRepository extends GetxController {
     Future.delayed(const Duration(seconds: 5));
     firebaseUser = Rx<User?>(_auth.currentUser);
     firebaseUser.bindStream(_auth.userChanges());
-    ever(firebaseUser, _setInitialScreen);
+    //ever(firebaseUser, _setInitialScreen);
   }
 
-  _setInitialScreen(User? user) {
-    user == null
-        ? Get.offAll(() => SplashScreen())
-        : Get.offAll(() => MainNavigation());
-  }
+  // _setInitialScreen(User? user) {
+  //   user == null
+  //       ? Get.offAll(() => Login())
+  //       : Get.offAll(() => MainNavigation());
+  // }
 
   Future<void> phoneAuthentication(String phoneNo) async {
     try {
@@ -195,7 +196,7 @@ class AuthRepository extends GetxController {
       );
       firebaseUser.value != null
           ? Get.offAll(() => MainNavigation())
-          : Get.offAll(() => Welcome());
+          : Get.offAll(() => Login());
     } on FirebaseAuthException catch (e) {
       final ex = SignUpWithEmailAndPasswordFailure.code(e.code);
       print('FIREBASE AUTH EXCEPTION - ${ex.message}');

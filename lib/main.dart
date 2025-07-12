@@ -2,9 +2,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_pace/src/features/authentication/auth_repository/auth_repository.dart';
-import 'package:smart_pace/src/features/screens/splash/splash_screen.dart';
 
 import 'firebase_options.dart';
+import 'src/features/screens/welcome_screen/welcome_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
+      home: WelcomeScreen(),
     );
   }
 }
