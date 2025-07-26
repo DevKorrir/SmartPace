@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "153300551973",
-    "project_id": "smartpace-65385",
-    "storage_bucket": "smartpace-65385.firebasestorage.app"
+    "project_number": "748028926687",
+    "project_id": "flutterprojects-c0ec9",
+    "storage_bucket": "flutterprojects-c0ec9.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:153300551973:android:0110d7d657df1fb89fb2cc",
+        "mobilesdk_app_id": "1:748028926687:android:5046e1f4ba15e23244276a",
         "android_client_info": {
           "package_name": "com.example.smart_pace"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCZfxoDlEYRdrdtIAFk0GYOHFRGjwRK5z8"
+          "current_key": "AIzaSyBdXrJ3ADwuJLoX8Q21CpBza-kikwH8pzM"
         }
       ],
       "services": {
