@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -72,10 +73,14 @@ class LoginController extends GetxController {
 
     try {
 
-      bool isEmailVerified = await AuthRepository.instance.checkEmailVerificationStatus(
+      // Check email verification status - this will throw exception if not verified
+      await AuthRepository.instance.loginUserWithEmailAndPassword(
         emailController.text.trim(),
-        passwordController.text.trim(),
+        passwordController.text,
       );
+
+      // If we reach here, user is verified and signed in
+      print('=== LOGIN SUCCESSFUL - USER IS VERIFIED ===');
 
 
       // Success - Show success message
@@ -91,9 +96,14 @@ class LoginController extends GetxController {
       Get.offAll(() => MainNavigation());
 
     } on SignUpWithEmailAndPasswordFailure catch (e) {
-      // Handle specific authentication exceptions
-      _handleAuthException(e);
-
+      // Handle email not verified specifically
+      if (e.message.contains('email-not-verified') ||
+          e.message.contains('verify your email')) {
+        _showEmailNotVerifiedDialog();
+      } else {
+        // Handle other authentication exceptions
+        _handleAuthException(e);
+      }
     } catch (e) {
       // Handle unexpected errors
       print('Unexpected login error: $e');
@@ -104,6 +114,62 @@ class LoginController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // Simplified email not verified dialog
+  void _showEmailNotVerifiedDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text(
+          'Email Not Verified',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Please verify your email address before signing in.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Check your email:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('📧 ${emailController.text}'),
+                  const SizedBox(height: 8),
+                  const Text('Look in:'),
+                  const Text('• Inbox'),
+                  const Text('• Spam/Junk folder'),
+                  const Text('• Promotions tab'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await _resendVerificationFromLogin();
+            },
+            child: const Text('Resend Email'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
   }
 
 
@@ -169,6 +235,38 @@ class LoginController extends GetxController {
   }
 
 
+  // Resend verification email from login screen
+  Future<void> _resendVerificationFromLogin() async {
+    try {
+      isLoading.value = true;
+
+      // Try to sign in temporarily to resend email
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
+
+      // Send verification email
+      await FirebaseAuth.instance.currentUser?.sendEmailVerification();
+
+      // Sign out immediately
+      await FirebaseAuth.instance.signOut();
+
+      _showSuccessSnackbar(
+        'Email Sent',
+        'Verification email sent successfully. Please check your inbox.',
+      );
+
+    } catch (e) {
+      print('Resend verification error: $e');
+      _showErrorSnackbar(
+        'Send Failed',
+        'Could not send verification email. Please try again.',
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   // Resend verification email
   Future<void> _resendVerificationEmail() async {
