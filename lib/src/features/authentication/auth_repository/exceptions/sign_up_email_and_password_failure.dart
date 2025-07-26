@@ -35,6 +35,11 @@ class SignUpWithEmailAndPasswordFailure {
         return const SignUpWithEmailAndPasswordFailure('Incorrect password. Please try again.');
       case 'invalid-credential':
         return const SignUpWithEmailAndPasswordFailure('Invalid email or password. Please check your credentials.');
+      case 'email-not-verified':
+        return const SignUpWithEmailAndPasswordFailure(
+            'Please verify your email address before signing in.'
+        );
+
 
     // Session and token errors
       case 'requires-recent-login':
