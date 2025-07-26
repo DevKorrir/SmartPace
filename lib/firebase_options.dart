@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -50,20 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCZfxoDlEYRdrdtIAFk0GYOHFRGjwRK5z8',
-    appId: '1:153300551973:android:0110d7d657df1fb89fb2cc',
-    messagingSenderId: '153300551973',
-    projectId: 'smartpace-65385',
-    storageBucket: 'smartpace-65385.firebasestorage.app',
+    apiKey: 'AIzaSyBdXrJ3ADwuJLoX8Q21CpBza-kikwH8pzM',
+    appId: '1:748028926687:android:5046e1f4ba15e23244276a',
+    messagingSenderId: '748028926687',
+    projectId: 'flutterprojects-c0ec9',
+    storageBucket: 'flutterprojects-c0ec9.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBB72CEYvrUzB1elbGJHrv8agODTyT9H1k',
-    appId: '1:153300551973:ios:51ce35cf0bbbe9939fb2cc',
-    messagingSenderId: '153300551973',
-    projectId: 'smartpace-65385',
-    storageBucket: 'smartpace-65385.firebasestorage.app',
+    apiKey: 'AIzaSyAPtWVx86c5fHIRNw-x-dvmYrFWv9CHpOA',
+    appId: '1:748028926687:ios:bcac1994b9bc34b944276a',
+    messagingSenderId: '748028926687',
+    projectId: 'flutterprojects-c0ec9',
+    storageBucket: 'flutterprojects-c0ec9.firebasestorage.app',
     iosBundleId: 'com.example.smartPace',
+  );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCqIRyqjHHte7ETeawm7mZ3xHae_rKP_vY',
+    appId: '1:748028926687:web:06a113389a0cebf544276a',
+    messagingSenderId: '748028926687',
+    projectId: 'flutterprojects-c0ec9',
+    authDomain: 'flutterprojects-c0ec9.firebaseapp.com',
+    storageBucket: 'flutterprojects-c0ec9.firebasestorage.app',
+    measurementId: 'G-CYNEGB2052',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyAPtWVx86c5fHIRNw-x-dvmYrFWv9CHpOA',
+    appId: '1:748028926687:ios:bcac1994b9bc34b944276a',
+    messagingSenderId: '748028926687',
+    projectId: 'flutterprojects-c0ec9',
+    storageBucket: 'flutterprojects-c0ec9.firebasestorage.app',
+    iosBundleId: 'com.example.smartPace',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyCqIRyqjHHte7ETeawm7mZ3xHae_rKP_vY',
+    appId: '1:748028926687:web:77b027baed05ba1844276a',
+    messagingSenderId: '748028926687',
+    projectId: 'flutterprojects-c0ec9',
+    authDomain: 'flutterprojects-c0ec9.firebaseapp.com',
+    storageBucket: 'flutterprojects-c0ec9.firebasestorage.app',
+    measurementId: 'G-BNLJ9N4Y6F',
   );
 
 }

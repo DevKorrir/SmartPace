@@ -9,9 +9,11 @@ class SignUpButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        final SignUpController controller = Get.put(SignUpController());
+        //final SignUpController controller = Get.put(SignUpController());
+        final SignUpController controller = Get.find<SignUpController>();
 
-    return Obx(() => Container(
+
+        return Obx(() => Container(
       height: 56,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -29,7 +31,11 @@ class SignUpButton extends StatelessWidget {
         ],
       ),
       child: ElevatedButton(
-        onPressed: controller.isLoading.value ? null : controller.handleSignUp,
+        //onPressed: controller.isLoading.value ? null : controller.handleSignUp,
+        onPressed: () {
+          if (!controller.isLoading.value) controller.handleSignUp();
+        },
+
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,

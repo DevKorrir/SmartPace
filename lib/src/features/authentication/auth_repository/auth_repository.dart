@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../screens/auth/login/login.dart';
 import '../../screens/welcome_screen/welcome_screen.dart';
+import '../domain/model/signup_request.dart';
 
 class AuthRepository extends GetxController {
   static AuthRepository get instance => Get.find();
@@ -186,27 +187,47 @@ class AuthRepository extends GetxController {
   }
 
   Future<void> createUserWithEmailAndPassword(
-      String email,
-      String password,
+      SignUpRequest req
       ) async {
     try {
       await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+        email: req.email,
+        password: req.password,
       );
-      firebaseUser.value != null
-          ? Get.offAll(() => MainNavigation())
-          : Get.offAll(() => Login());
+      // Send verification email
+      await _auth.currentUser!.sendEmailVerification();
+      // Clear verification data
+      clearVerificationData();
+
+      // Show success message instead
+      _showSnackbar(
+          "Account Created",
+          "Please check your email to verify your account",
+          Colors.green
+      );
+
+      // Sign out the user until they verify their email
+      await _auth.signOut();
+
+      // firebaseUser.value != null
+      //     ? Get.offAll(() => MainNavigation())
+      //     : Get.offAll(() => Login());
     } on FirebaseAuthException catch (e) {
       final ex = SignUpWithEmailAndPasswordFailure.code(e.code);
       print('FIREBASE AUTH EXCEPTION - ${ex.message}');
-      throw ex;
+      throw ex; // from controller
     } catch (e) {
       const ex = SignUpWithEmailAndPasswordFailure();
       print('FIREBASE AUTH EXCEPTION - ${ex.message}');
       throw ex;
     }
   }
+
+
+
+
+
+
 
   Future<void> loginUserWithEmailAndPassword(
       String email,
