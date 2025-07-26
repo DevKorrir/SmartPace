@@ -15,6 +15,8 @@ class LoginController extends GetxController {
 
   var isPasswordVisible = false.obs;
   var isLoading = false.obs;
+  var rememberMe = false.obs;
+
   var emailError = ''.obs;
   var passwordError = ''.obs;
 
@@ -70,10 +72,11 @@ class LoginController extends GetxController {
 
     try {
 
-      await AuthRepository.instance.loginUserWithEmailAndPassword(
+      bool isEmailVerified = await AuthRepository.instance.checkEmailVerificationStatus(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
+
 
       // Success - Show success message
       _showSuccessSnackbar(

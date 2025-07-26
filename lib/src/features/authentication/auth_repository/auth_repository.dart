@@ -190,12 +190,24 @@ class AuthRepository extends GetxController {
       SignUpRequest req
       ) async {
     try {
-      await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: req.email,
         password: req.password,
       );
-      // Send verification email
-      await _auth.currentUser!.sendEmailVerification();
+
+      // Check if user was created
+      if (userCredential.user == null) {
+        throw 'User creation failed - no user returned';
+      }
+
+      // // Send verification email
+      // await _auth.currentUser!.sendEmailVerification();
+
+      // Send verification email with detailed logging
+      print('=== SENDING VERIFICATION EMAIL ===');
+      await _sendVerificationEmailWithRetry(userCredential.user!);
+      print('=== VERIFICATION EMAIL SENT ===');
+
       // Clear verification data
       clearVerificationData();
 
@@ -316,28 +328,329 @@ class AuthRepository extends GetxController {
     }
   }
 
-// Updated resendEmailVerification method (if you don't have it)
+// // Updated resendEmailVerification method (if you don't have it)
+//   Future<void> resendEmailVerification() async {
+//     try {
+//       User? user = _auth.currentUser;
+//       if (user != null && !user.emailVerified) {
+//         await user.sendEmailVerification();
+//         _showSnackbar(
+//             "Email Sent",
+//             "Verification email sent successfully",
+//             Colors.green
+//         );
+//       } else {
+//         throw 'No user signed in or email already verified';
+//       }
+//     } on FirebaseAuthException catch (e) {
+//       _showSnackbar("Error", "Failed to send verification email", Colors.red);
+//       throw SignUpWithEmailAndPasswordFailure.code(e.code);
+//     } catch (e) {
+//       _showSnackbar("Error", "Failed to send verification email", Colors.red);
+//       throw e.toString();
+//     }
+//   }
+
+  // Improved resend verification email method
   Future<void> resendEmailVerification() async {
     try {
       User? user = _auth.currentUser;
-      if (user != null && !user.emailVerified) {
-        await user.sendEmailVerification();
+
+      if (user == null) {
+        throw 'No user is currently signed in';
+      }
+
+      // Reload user to get latest verification status
+      await user.reload();
+      user = _auth.currentUser; // Get refreshed user
+
+      if (user?.emailVerified == true) {
         _showSnackbar(
-            "Email Sent",
-            "Verification email sent successfully",
+            "Already Verified",
+            "Your email is already verified. You can sign in now.",
             Colors.green
         );
-      } else {
-        throw 'No user signed in or email already verified';
+        return;
       }
-    } on FirebaseAuthException catch (e) {
-      _showSnackbar("Error", "Failed to send verification email", Colors.red);
-      throw SignUpWithEmailAndPasswordFailure.code(e.code);
+
+      await _sendVerificationEmailWithRetry(user!, 0);
+
     } catch (e) {
-      _showSnackbar("Error", "Failed to send verification email", Colors.red);
+      print('Resend verification error: $e');
+      _showSnackbar(
+          "Resend Failed",
+          "Could not resend verification email. Please try again later.",
+          Colors.red
+      );
       throw e.toString();
     }
   }
+
+
+  // Send verification email with retry logic
+  Future<void> _sendVerificationEmailWithRetry(User user, [int retryCount = 0]) async {
+    try {
+      print('Attempting to send verification email (attempt ${retryCount + 1})');
+
+      // Reload user to get latest state
+      await user.reload();
+      User? refreshedUser = _auth.currentUser;
+
+      if (refreshedUser == null) {
+        throw 'User not found after reload';
+      }
+
+      // Check if already verified (shouldn't be for new accounts)
+      if (refreshedUser.emailVerified) {
+        print('Email already verified, skipping verification email');
+        return;
+      }
+
+      // Send the verification email
+      await refreshedUser.sendEmailVerification();
+      print('=== VERIFICATION EMAIL SENT SUCCESSFULLY ===');
+
+      // Show additional helpful message
+      Get.dialog(
+        AlertDialog(
+          title: const Text('Check Your Email'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('We sent a verification email to:'),
+              const SizedBox(height: 8),
+              Text(
+                refreshedUser.email ?? 'your email',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text('Please:'),
+              const Text('• Check your inbox'),
+              const Text('• Check your spam/junk folder'),
+              const Text('• Click the verification link'),
+              const SizedBox(height: 16),
+              const Text('Then return to sign in.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('OK'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Get.back();
+                await _sendVerificationEmailWithRetry(refreshedUser!, 0);
+              },
+              child: const Text('Resend Email'),
+            ),
+          ],
+        ),
+      );
+
+    } on FirebaseAuthException catch (e) {
+      print('=== EMAIL VERIFICATION ERROR ===');
+      print('Error Code: ${e.code}');
+      print('Error Message: ${e.message}');
+
+      // Handle specific email sending errors
+      if (e.code == 'too-many-requests' && retryCount < 2) {
+        print('Too many requests, waiting before retry...');
+        await Future.delayed(Duration(seconds: 5 * (retryCount + 1)));
+        return _sendVerificationEmailWithRetry(user, retryCount + 1);
+      }
+
+      // Show user-friendly error
+      String errorMessage = _getEmailVerificationErrorMessage(e.code);
+      _showSnackbar("Email Send Failed", errorMessage, Colors.orange);
+
+      // Don't throw - account was created successfully, just email failed
+      print('Continuing despite email error - user can request resend later');
+
+    } catch (e) {
+      print('=== UNEXPECTED EMAIL ERROR ===');
+      print('Error: $e');
+
+      if (retryCount < 1) {
+        print('Retrying email send...');
+        await Future.delayed(const Duration(seconds: 3));
+        return _sendVerificationEmailWithRetry(user, retryCount + 1);
+      }
+
+      _showSnackbar(
+          "Email Issue",
+          "Account created but verification email may be delayed. Check your email shortly.",
+          Colors.orange
+      );
+    }
+  }
+
+  // Get user-friendly error messages for email verification
+  String _getEmailVerificationErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'too-many-requests':
+        return 'Too many email requests. Please wait a few minutes before requesting another verification email.';
+      case 'invalid-email':
+        return 'Invalid email address. Please check your email and try again.';
+      case 'network-request-failed':
+        return 'Network error. Please check your internet connection and try again.';
+      case 'internal-error':
+        return 'Internal error sending email. Please try again in a few minutes.';
+      default:
+        return 'Failed to send verification email. You can request a new one from the login screen.';
+    }
+  }
+
+
+  // Check email verification status just if it working
+
+// Check if email is verified and handle accordingly
+  Future<bool> checkEmailVerificationStatus(String email, String password) async {
+    try {
+      print('=== CHECKING EMAIL VERIFICATION STATUS ===');
+
+      // Sign in temporarily to check verification status
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Reload user to get latest verification status
+      await userCredential.user!.reload();
+      User? refreshedUser = _auth.currentUser;
+
+      bool isVerified = refreshedUser?.emailVerified ?? false;
+      print('Email verified: $isVerified');
+
+      if (!isVerified) {
+        // Sign out the unverified user
+        await _auth.signOut();
+
+        // Show verification dialog with options
+        _showVerificationRequiredDialog(email, password);
+        return false;
+      }
+
+      print('=== EMAIL VERIFICATION CHECK PASSED ===');
+      return true;
+
+    } on FirebaseAuthException catch (e) {
+      print('Verification check error: ${e.code} - ${e.message}');
+      throw SignUpWithEmailAndPasswordFailure.code(e.code);
+    }
+  }
+
+// Show dialog when email verification is required
+  void _showVerificationRequiredDialog(String email, String password) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text(
+          'Email Verification Required',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Your email address is not yet verified.'),
+            const SizedBox(height: 12),
+            Text('Please check your email: $email'),
+            const SizedBox(height: 8),
+            const Text('Look in:'),
+            const Text('• Inbox'),
+            const Text('• Spam/Junk folder'),
+            const Text('• Promotions tab (Gmail)'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Get.back();
+              await _manualResendVerification(email, password);
+            },
+            child: const Text(
+              'Resend Email',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Get.back();
+              await _recheckVerification(email, password);
+            },
+            child: const Text(
+              'I Verified - Check Again',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+            ),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+// Manually resend verification email
+  Future<void> _manualResendVerification(String email, String password) async {
+    try {
+      print('=== MANUAL RESEND VERIFICATION ===');
+
+      // Sign in to get user object
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Send verification email
+      await _sendVerificationEmailWithRetry(userCredential.user!, 0);
+
+      // Sign out
+      await _auth.signOut();
+
+    } catch (e) {
+      print('Manual resend error: $e');
+      _showSnackbar(
+          "Resend Failed",
+          "Could not resend verification email. Please try again.",
+          Colors.red
+      );
+    }
+  }
+
+// Recheck verification status
+  Future<void> _recheckVerification(String email, String password) async {
+    try {
+      print('=== RECHECKING VERIFICATION STATUS ===');
+
+      bool isVerified = await checkEmailVerificationStatus(email, password);
+
+      if (isVerified) {
+        _showSnackbar(
+            "Success!",
+            "Email verified successfully. You can now sign in.",
+            Colors.green
+        );
+
+        // Navigate to main app since user is now signed in
+        Get.offAll(() => MainNavigation());
+      }
+
+    } catch (e) {
+      print('Recheck verification error: $e');
+      _showSnackbar(
+          "Check Failed",
+          "Could not verify email status. Please try again.",
+          Colors.red
+      );
+    }
+  }
+
+
+
 
 
 
