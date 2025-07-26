@@ -279,4 +279,66 @@ class AuthRepository extends GetxController {
     verificationId.value = '';
     resendToken.value = null;
   }
+
+
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      _showSnackbar(
+          "Reset Email Sent",
+          "Password reset instructions sent to your email",
+          Colors.green
+      );
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = _getPasswordResetErrorMessage(e.code);
+      _showSnackbar("Reset Failed", errorMessage, Colors.red);
+      throw SignUpWithEmailAndPasswordFailure.code(e.code);
+    } catch (e) {
+      _showSnackbar("Error", "Failed to send reset email", Colors.red);
+      throw 'Failed to send password reset email: ${e.toString()}';
+    }
+  }
+
+// Get error messages for password reset
+  String _getPasswordResetErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'user-not-found':
+        return 'No account found with this email address.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'too-many-requests':
+        return 'Too many requests. Please try again later.';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection.';
+      default:
+        return 'Failed to send password reset email. Please try again.';
+    }
+  }
+
+// Updated resendEmailVerification method (if you don't have it)
+  Future<void> resendEmailVerification() async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        _showSnackbar(
+            "Email Sent",
+            "Verification email sent successfully",
+            Colors.green
+        );
+      } else {
+        throw 'No user signed in or email already verified';
+      }
+    } on FirebaseAuthException catch (e) {
+      _showSnackbar("Error", "Failed to send verification email", Colors.red);
+      throw SignUpWithEmailAndPasswordFailure.code(e.code);
+    } catch (e) {
+      _showSnackbar("Error", "Failed to send verification email", Colors.red);
+      throw e.toString();
+    }
+  }
+
+
+
 }

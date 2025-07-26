@@ -9,7 +9,8 @@ class TermsCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SignUpController controller = Get.put(SignUpController());
+    //final SignUpController controller = Get.put(SignUpController());
+    final SignUpController controller = Get.find<SignUpController>();
 
     return Obx(
       () => Row(

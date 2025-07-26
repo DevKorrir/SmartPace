@@ -1,34 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../../../../routing/navigation/navigation.dart';
-import '../../../authentication/auth_repository/auth_repository.dart';
-import '../../../authentication/auth_repository/exceptions/sign_up_email_and_password_failure.dart';
-import '../../../forgot_password/forgot_password_options/forgot_password_model_bottom_sheet.dart';
-import '../signup/sign_up.dart';
+import 'package:smart_pace/src/features/authentication/auth_repository/auth_repository.dart';
+import 'package:smart_pace/src/features/authentication/auth_repository/exceptions/sign_up_email_and_password_failure.dart';
+import 'package:smart_pace/src/routing/navigation/navigation.dart';
 
 class LoginController extends GetxController {
   static LoginController get instance => Get.find();
 
+  // Text Controllers
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
+  
+  // Observable variables
   var isPasswordVisible = false.obs;
   var isLoading = false.obs;
+  var rememberMe = false.obs;
+  
+  // Error messages
   var emailError = ''.obs;
   var passwordError = ''.obs;
-
-  bool get isFormValid =>
-      emailController.text.isNotEmpty &&
-          passwordController.text.isNotEmpty &&
-          emailError.value.isEmpty &&
-          passwordError.value.isEmpty;
-
+  
+  // Form validation
+  bool get isFormValid => 
+      emailController.text.isNotEmpty && 
+      passwordController.text.isNotEmpty &&
+      emailError.value.isEmpty &&
+      passwordError.value.isEmpty;
+  
   // Toggle password visibility
   void togglePasswordVisibility() {
     isPasswordVisible.value = !isPasswordVisible.value;
   }
-
+  
+  // Toggle remember me
+  void toggleRememberMe() {
+    rememberMe.value = !rememberMe.value;
+  }
+  
   // Validate email
   void validateEmail(String value) {
     if (value.isEmpty) {
@@ -39,25 +47,22 @@ class LoginController extends GetxController {
       emailError.value = '';
     }
   }
-
+  
   // Validate password
   void validatePassword(String value) {
     if (value.isEmpty) {
       passwordError.value = 'Password is required';
-    } else if (value.length < 6) {
-      passwordError.value = 'Password must be at least 6 characters';
     } else {
       passwordError.value = '';
     }
   }
 
-  // Handle login with Firebase
+  // Handle login with proper exception handling
   Future<void> handleLogin() async {
-
-    // validate form first
+    // Validate form first
     validateEmail(emailController.text);
     validatePassword(passwordController.text);
-
+    
     if (!isFormValid) {
       _showErrorSnackbar(
         'Invalid Input',
@@ -69,10 +74,9 @@ class LoginController extends GetxController {
     isLoading.value = true;
 
     try {
-
       await AuthRepository.instance.loginUserWithEmailAndPassword(
         emailController.text.trim(),
-        passwordController.text.trim(),
+        passwordController.text,
       );
 
       // Success - Show success message
@@ -83,14 +87,14 @@ class LoginController extends GetxController {
 
       // Clear form data
       _clearForm();
-
-     // Navigate to main app
+      
+      // Navigate to main app
       Get.offAll(() => MainNavigation());
 
     } on SignUpWithEmailAndPasswordFailure catch (e) {
       // Handle specific authentication exceptions
       _handleAuthException(e);
-
+      
     } catch (e) {
       // Handle unexpected errors
       print('Unexpected login error: $e');
@@ -102,7 +106,6 @@ class LoginController extends GetxController {
       isLoading.value = false;
     }
   }
-
 
   // Handle specific authentication exceptions
   void _handleAuthException(SignUpWithEmailAndPasswordFailure exception) {
@@ -165,52 +168,30 @@ class LoginController extends GetxController {
     );
   }
 
-
-
   // Resend verification email
   Future<void> _resendVerificationEmail() async {
     try {
       isLoading.value = true;
-
+      
       // First try to create a temporary account to resend verification
       // This is a workaround since the user isn't signed in
       await AuthRepository.instance.loginUserWithEmailAndPassword(
         emailController.text.trim(),
         passwordController.text,
       );
-
+      
       // If we get here, the user might be signed in, try to resend
       await AuthRepository.instance.resendEmailVerification();
-
+      
       _showSuccessSnackbar(
         'Email Sent',
         'Verification email has been sent successfully.',
       );
-
+      
     } catch (e) {
       _showErrorSnackbar(
         'Failed to Send',
         'Could not send verification email. Please try again.',
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<void> handleGoogleSignIn() async {
-    try {
-      isLoading.value = true;
-
-      await Future.delayed(const Duration(seconds: 1));
-
-      Get.offAll(() => MainNavigation());
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Google Sign In failed',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[100],
-        colorText: Colors.red[800],
       );
     } finally {
       isLoading.value = false;
@@ -237,15 +218,15 @@ class LoginController extends GetxController {
 
     try {
       isLoading.value = true;
-
+      
       // You'll need to add this method to your AuthRepository
       await AuthRepository.instance.sendPasswordResetEmail(emailController.text.trim());
-
+      
       _showSuccessSnackbar(
         'Reset Email Sent',
         'Password reset instructions have been sent to your email.',
       );
-
+      
     } catch (e) {
       _showErrorSnackbar(
         'Reset Failed',
@@ -254,16 +235,6 @@ class LoginController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  // Navigate to forgot password
-  void navigateToForgotPassword() {
-    ForgotPasswordScreen.buildShowModalBottomSheet(Get.context!);
-  }
-
-  // Navigate to sign up
-  void navigateToSignUp() {
-    Get.to(() => const SignUp());
   }
 
   // Clear form data
