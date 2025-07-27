@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:smart_pace/src/features/authentication/auth_repository/exceptions/sign_up_email_and_password_failure.dart';
 import 'package:smart_pace/src/routing/navigation/navigation.dart';
 import 'package:flutter/material.dart';
@@ -15,9 +16,13 @@ class AuthRepository extends GetxController {
   // Variables
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  //final _googleSignIn = GoogleSignIn();
   late final Rx<User?> firebaseUser;
   var verificationId = ''.obs;
   final resendToken = Rx<int?>(null);
+
+
 
   @override
   void onReady() {
@@ -295,15 +300,438 @@ class AuthRepository extends GetxController {
   }
 
 
+
+
+
+
+
+
+
+
+
+
+
+  // Create user document in Firestore .. only called during successfull login
+  Future<void> _createUserInFirestore(User user) async {
+
+    try {
+      // Get the name from Firebase Auth displayName (set during signup)
+      String userName = user.displayName ?? _extractNameFromEmail(user.email ?? '');
+
+      // Check if user already exists in Firestore
+      DocumentSnapshot existingUser = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (existingUser.exists) {
+        print('User already exists in Firestore, updating lastSignIn...');
+        // User exists, just update last sign in
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .update({
+          'lastSignIn': FieldValue.serverTimestamp(),
+          'emailVerified': user.emailVerified,
+        });
+        return;
+      }
+
+
+      Map<String, dynamic> userData = {
+        'uid': user.uid,
+        'email': user.email,
+        'fullName': userName,
+        'phoneNumber': user.phoneNumber,
+        'photoURL': user.photoURL,
+        'emailVerified': user.emailVerified,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastSignIn': FieldValue.serverTimestamp(),
+        'authProvider': 'email', // Track how user signed up
+      };
+
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set(userData, SetOptions(merge: true));
+
+
+
+    } catch (e) {
+      print('=== ERROR CREATING USER IN FIRESTORE ===');
+      print('Error: $e');
+      // Don't throw - authentication was successful, Firestore is secondary
+    }
+  }
+
+
+
+
+  // Handle Google Sign In with phone number collection
+  Future<UserCredential> signInWithGoogle() async {
+
+    await _googleSignIn.initialize();
+
+    try {
+      print('=== STARTING GOOGLE SIGN IN ===');
+
+      // Step 1: trigger auth flow
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate();
+
+      if (googleUser == null) {
+        // User cancelled the sign-in
+        throw 'Google sign-in was cancelled';
+      }
+
+      print('Google user signed in: ${googleUser.email}');
+
+      // Step 2: Get Google authentication credentials
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      //creaye fire credetial
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      // Step 3: Check if user already exists in Firebase Auth
+      User? existingUser;
+      bool hasPhoneNumber = false;
+      try {
+        // Try to link the credential to see if user exists
+        List<String> signInMethods = await _auth.fetchSignInMethodsForEmail(googleUser.email);
+
+        if (signInMethods.isNotEmpty) {
+          // User exists, sign them in
+          UserCredential userCredential = await _auth.signInWithCredential(credential);
+          existingUser = userCredential.user;
+
+          if (existingUser != null) {
+          // Check if they already have phone number in Firestore
+          DocumentSnapshot userDoc = await _firestore
+              .collection('users')
+              .doc(existingUser.uid)
+              .get();
+
+          if (userDoc.exists) {
+            Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
+            String? phoneNumber = userData?['phoneNumber']?.toString();
+
+            if (phoneNumber != null && phoneNumber.isNotEmpty && phoneNumber != 'null') {
+              hasPhoneNumber = true;
+              print('Existing user found with phone number: $phoneNumber');
+            }
+            // if (userData != null && userData['phoneNumber'] != null && userData['phoneNumber'].toString().isNotEmpty) {
+            //   // User has phone number, just update last sign in and proceed
+            //   await _updateGoogleUserInFirestore(existingUser);
+            //   print('=== EXISTING GOOGLE USER SIGNED IN SUCCESSFULLY ===');
+             }
+          }
+        }
+      } catch (e) {
+        print('Error checking existing user: $e');
+      }
+
+      // Step 4: If existing user has phone number, just update and proceed
+      if (existingUser != null && hasPhoneNumber) {
+        await _updateGoogleUserInFirestore(existingUser);
+        print('=== EXISTING GOOGLE USER SIGNED IN SUCCESSFULLY ===');
+        return await _auth.signInWithCredential(credential);
+      }
+
+      // Step 5: Show phone number dialog
+      String? phoneNumber = await _showPhoneNumberDialog(googleUser.displayName ?? 'User');
+
+      if (phoneNumber == null || phoneNumber.isEmpty) {
+
+        // User cancelled phone number input, sign out from Google
+        await _googleSignIn.signOut();
+
+        if (_auth.currentUser != null) {
+          await _auth.signOut();
+        }
+
+        throw 'Phone number is required to complete registration';
+      }
+
+      // Step 6: Sign in with Firebase using Google credentials
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      User? user = userCredential.user;
+
+      if (user == null) {
+        throw 'Failed to sign in with Google';
+      }
+
+      // Step 7: Create/update user in Firestore with phone number
+      await _createGoogleUserInFirestore(user, phoneNumber);
+
+      print('=== GOOGLE SIGN IN COMPLETED SUCCESSFULLY ===');
+      return userCredential;
+
+    } catch (e) {
+      print('=== GOOGLE SIGN IN ERROR ===');
+      print('Error: $e');
+
+      // Clean up on error
+      try {
+        await _googleSignIn.signOut();
+        if (_auth.currentUser != null) {
+          await _auth.signOut();
+        }
+      } catch (cleanupError) {
+        print('Error during cleanup: $cleanupError');
+      }
+
+      throw e.toString();
+    }
+  }
+
+  // Show phone number input dialog
+  Future<String?> _showPhoneNumberDialog(String userName) async {
+    final phoneController = TextEditingController();
+    String? result;
+
+    await Get.dialog(
+      AlertDialog(
+        title: Text('Welcome, $userName!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'To complete your registration, please provide your phone number:',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                hintText: '+254712345678',
+                prefixIcon: Icon(Icons.phone),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                // You can add phone number validation here
+              },
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Include country code (e.g., +254 for Kenya)',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              result = null;
+              Get.back();
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              String phone = phoneController.text.trim();
+              if (phone.isNotEmpty && phone.length >= 10) {
+                // Ensure phone number starts with +
+                if (!phone.startsWith('+')) {
+                  phone = '+254$phone'; // Default to Kenya code, adjust as needed
+                }
+                result = phone;
+                Get.back();
+              } else {
+                Get.snackbar(
+                  'Invalid Phone',
+                  'Please enter a valid phone number',
+                  backgroundColor: Colors.red[100],
+                  colorText: Colors.red[800],
+                );
+              }
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+
+    return result;
+  }
+
+
+
+
+
+
+  // Create Google user in Firestore with phone number
+  Future<void> _createGoogleUserInFirestore(User user, String phoneNumber) async {
+    try {
+      print('=== CREATING GOOGLE USER IN FIRESTORE ===');
+      print('User ID: ${user.uid}');
+      print('Email: ${user.email}');
+      print('Phone: $phoneNumber');
+
+      Map<String, dynamic> userData = {
+        'uid': user.uid,
+        'email': user.email,
+        'name': user.displayName ?? _extractNameFromEmail(user.email ?? ''),
+        'phoneNumber': phoneNumber,
+        'photoURL': user.photoURL,
+        'emailVerified': user.emailVerified,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastSignIn': FieldValue.serverTimestamp(),
+        'authProvider': 'google', // Track how user signed up
+      };
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set(userData, SetOptions(merge: true));
+
+      print('=== GOOGLE USER CREATED IN FIRESTORE SUCCESSFULLY ===');
+
+    } catch (e) {
+      print('=== ERROR CREATING GOOGLE USER IN FIRESTORE ===');
+      print('Error: $e');
+      throw 'Failed to save user data: $e';
+    }
+  }
+
+
+
+
+  // Update existing Google user in Firestore
+  Future<void> _updateGoogleUserInFirestore(User user) async {
+    try {
+      print('=== UPDATING GOOGLE USER IN FIRESTORE ===');
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .update({
+        'lastSignIn': FieldValue.serverTimestamp(),
+        'emailVerified': user.emailVerified,
+        'photoURL': user.photoURL, // Update in case it changed
+      });
+
+      print('=== GOOGLE USER UPDATED IN FIRESTORE SUCCESSFULLY ===');
+
+    } catch (e) {
+      print('=== ERROR UPDATING GOOGLE USER IN FIRESTORE ===');
+      print('Error: $e');
+      // Don't throw - authentication was successful
+    }
+  }
+
+
+
+
+
+  // Extract first name from email
+  String _extractNameFromEmail(String email) {
+    if (email.isEmpty) return 'User';
+
+    String localPart = email.split('@').first;
+
+    // Remove numbers and special characters, capitalize first letter
+    String cleanName = localPart.replaceAll(RegExp(r'[^a-zA-Z]'), '');
+
+    if (cleanName.isEmpty) return 'User';
+
+    return cleanName[0].toUpperCase() + cleanName.substring(1).toLowerCase();
+  }
+
+  // // Ensure user exists in Firestore (for login)
+  // Future<void> _ensureUserInFirestore(User user) async {
+  //   try {
+  //
+  //     DocumentSnapshot userDoc = await _firestore
+  //         .collection('users')
+  //         .doc(user.uid)
+  //         .get();
+  //
+  //     if (!userDoc.exists) {
+  //       // User doesn't exist in Firestore, create them
+  //       print('User not found in Firestore, creating...');
+  //       await _createUserInFirestore(user);
+  //     } else {
+  //       // User exists, update last sign in
+  //       print('User found in Firestore, updating last sign in...');
+  //       await _firestore
+  //           .collection('users')
+  //           .doc(user.uid)
+  //           .update({
+  //         'lastSignIn': FieldValue.serverTimestamp(),
+  //         'emailVerified': user.emailVerified,
+  //       });
+  //     }
+  //
+  //     print('=== USER FIRESTORE OPERATIONS COMPLETED ===');
+  //
+  //   } catch (e) {
+  //     print('=== ERROR WITH FIRESTORE USER OPERATIONS ===');
+  //     print('Error: $e');
+  //     // Don't throw - authentication was successful
+  //   }
+  // }
+
+  // Get user data from Firestore
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      User? user = currentUser;
+      if (user == null) return null;
+
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        return doc.data() as Map<String, dynamic>?;
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user data: $e');
+      return null;
+    }
+  }
+
+  // Update user data in Firestore
+  Future<void> updateUserData(Map<String, dynamic> data) async {
+    try {
+      User? user = currentUser;
+      if (user == null) throw 'No user logged in';
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .update(data);
+
+      print('User data updated successfully');
+    } catch (e) {
+      print('Error updating user data: $e');
+      throw 'Failed to update user data: $e';
+    }
+  }
+
+
   Future<void> logOut() async {
     try {
+      // Sign out from both Firebase Auth and Google Sign In
       await _auth.signOut();
+      await _googleSignIn.signOut();
       clearVerificationData();
+      print('=== LOGOUT SUCCESSFUL ===');
     } catch (e) {
       print('Logout failed: ${e.toString()}');
       throw 'Logout failed: ${e.toString()}';
     }
   }
+
+
 
   void _showSnackbar(String title, String message, Color backgroundColor) {
     Get.snackbar(
@@ -328,6 +756,8 @@ class AuthRepository extends GetxController {
     verificationId.value = '';
     resendToken.value = null;
   }
+
+
 
 
   // Send password reset email
@@ -524,146 +954,8 @@ class AuthRepository extends GetxController {
 
 
 
-  // Create user document in Firestore .. only called during successfull login
-  Future<void> _createUserInFirestore(User user) async {
-
-    try {
-      // Get the name from Firebase Auth displayName (set during signup)
-      String userName = user.displayName ?? _extractNameFromEmail(user.email ?? '');
-
-      // Check if user already exists in Firestore
-      DocumentSnapshot existingUser = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      if (existingUser.exists) {
-        print('User already exists in Firestore, updating lastSignIn...');
-        // User exists, just update last sign in
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .update({
-          'lastSignIn': FieldValue.serverTimestamp(),
-          'emailVerified': user.emailVerified,
-        });
-        return;
-      }
 
 
-      Map<String, dynamic> userData = {
-        'uid': user.uid,
-        'email': user.email,
-        'fullName': userName,
-        'phoneNumber': user.phoneNumber,
-        'photoURL': user.photoURL,
-        'emailVerified': user.emailVerified,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastSignIn': FieldValue.serverTimestamp(),
-        'authProvider': 'email', // Track how user signed up
-      };
-
-
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .set(userData, SetOptions(merge: true));
-
-
-
-    } catch (e) {
-      print('=== ERROR CREATING USER IN FIRESTORE ===');
-      print('Error: $e');
-      // Don't throw - authentication was successful, Firestore is secondary
-    }
-  }
-
-  // Extract first name from email
-  String _extractNameFromEmail(String email) {
-    if (email.isEmpty) return 'User';
-
-    String localPart = email.split('@').first;
-
-    // Remove numbers and special characters, capitalize first letter
-    String cleanName = localPart.replaceAll(RegExp(r'[^a-zA-Z]'), '');
-
-    if (cleanName.isEmpty) return 'User';
-
-    return cleanName[0].toUpperCase() + cleanName.substring(1).toLowerCase();
-  }
-
-  // Ensure user exists in Firestore (for login)
-  Future<void> _ensureUserInFirestore(User user) async {
-    try {
-
-      DocumentSnapshot userDoc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      if (!userDoc.exists) {
-        // User doesn't exist in Firestore, create them
-        print('User not found in Firestore, creating...');
-        await _createUserInFirestore(user);
-      } else {
-        // User exists, update last sign in
-        print('User found in Firestore, updating last sign in...');
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .update({
-          'lastSignIn': FieldValue.serverTimestamp(),
-          'emailVerified': user.emailVerified,
-        });
-      }
-
-      print('=== USER FIRESTORE OPERATIONS COMPLETED ===');
-
-    } catch (e) {
-      print('=== ERROR WITH FIRESTORE USER OPERATIONS ===');
-      print('Error: $e');
-      // Don't throw - authentication was successful
-    }
-  }
-
-  // Get user data from Firestore
-  Future<Map<String, dynamic>?> getUserData() async {
-    try {
-      User? user = currentUser;
-      if (user == null) return null;
-
-      DocumentSnapshot doc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      if (doc.exists) {
-        return doc.data() as Map<String, dynamic>?;
-      }
-      return null;
-    } catch (e) {
-      print('Error getting user data: $e');
-      return null;
-    }
-  }
-
-  // Update user data in Firestore
-  Future<void> updateUserData(Map<String, dynamic> data) async {
-    try {
-      User? user = currentUser;
-      if (user == null) throw 'No user logged in';
-
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .update(data);
-
-      print('User data updated successfully');
-    } catch (e) {
-      print('Error updating user data: $e');
-      throw 'Failed to update user data: $e';
-    }
-  }
 
 
 

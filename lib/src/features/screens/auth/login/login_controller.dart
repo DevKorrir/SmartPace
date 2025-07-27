@@ -96,10 +96,10 @@ class LoginController extends GetxController {
         );
       } else {
         // Success - Show success message
-        // _showSuccessSnackbar(
-        //   'Welcome Back!',
-        //   'Login successful',
-        // );
+        _showSuccessSnackbar(
+          'Welcome Back!',
+          'Login successful',
+        );
       }
 
       // Clear form data
@@ -123,6 +123,65 @@ class LoginController extends GetxController {
       _showErrorSnackbar(
         'Login Failed',
         'An unexpected error occurred. Please try again.',
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Handle Google Sign In (Updated to save to Firestore)
+  Future<void> handleGoogleSignIn() async {
+    try {
+      isLoading.value = true;
+
+      // This will handle the entire Google Sign In flow:
+      // 1. Google authentication
+      // 2. Phone number collection
+      // 3. Firebase Auth sign in
+      // 4. Firestore user creation
+      await AuthRepository.instance.signInWithGoogle();
+
+      // If we reach here, user is signed in and saved to Firestore
+      print('=== GOOGLE SIGN IN SUCCESSFUL ===');
+
+      // Get user data to show personalized message
+      final userData = await AuthRepository.instance.getUserData();
+      if (userData != null) {
+        String userName = userData['name'] ?? 'User';
+        _showSuccessSnackbar(
+          'Welcome, $userName!',
+          'Google Sign In successful',
+        );
+      } else {
+        _showSuccessSnackbar(
+          'Welcome!',
+          'Google Sign In successful',
+        );
+      }
+
+      // Clear form data
+      _clearForm();
+
+      // Navigate to main app
+      Get.offAll(() => MainNavigation());
+
+    } catch (e) {
+      print('Google Sign In error: $e');
+
+      // Handle specific error messages
+      String errorMessage = 'Google Sign In failed. Please try again.';
+
+      if (e.toString().contains('cancelled')) {
+        errorMessage = 'Google Sign In was cancelled.';
+      } else if (e.toString().contains('Phone number is required')) {
+        errorMessage = 'Phone number is required to complete registration.';
+      } else if (e.toString().contains('network')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+
+      _showErrorSnackbar(
+        'Sign In Failed',
+        errorMessage,
       );
     } finally {
       isLoading.value = false;
@@ -311,25 +370,25 @@ class LoginController extends GetxController {
     }
   }
 
-  Future<void> handleGoogleSignIn() async {
-    try {
-      isLoading.value = true;
-
-      await Future.delayed(const Duration(seconds: 1));
-
-      Get.offAll(() => MainNavigation());
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Google Sign In failed',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[100],
-        colorText: Colors.red[800],
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
+  // Future<void> handleGoogleSignIn() async {
+  //   try {
+  //     isLoading.value = true;
+  //
+  //     await Future.delayed(const Duration(seconds: 1));
+  //
+  //     Get.offAll(() => MainNavigation());
+  //   } catch (e) {
+  //     Get.snackbar(
+  //       'Error',
+  //       'Google Sign In failed',
+  //       snackPosition: SnackPosition.BOTTOM,
+  //       backgroundColor: Colors.red[100],
+  //       colorText: Colors.red[800],
+  //     );
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
 
   // Handle forgot password
   Future<void> handleForgotPassword() async {
