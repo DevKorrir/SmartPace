@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smart_pace/src/features/authentication/auth_repository/exceptions/sign_up_email_and_password_failure.dart';
@@ -13,6 +14,7 @@ class AuthRepository extends GetxController {
 
   // Variables
   final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
   late final Rx<User?> firebaseUser;
   var verificationId = ''.obs;
   final resendToken = Rx<int?>(null);
@@ -200,8 +202,9 @@ class AuthRepository extends GetxController {
         throw 'User creation failed - no user returned';
       }
 
-      // // Send verification email
-      // await _auth.currentUser!.sendEmailVerification();
+      // Store the user's name temporarily in Firebase Auth displayName
+      // We'll use this during login to save to Firestore
+      await userCredential.user!.updateDisplayName(req.fullName);
 
       // Send verification email with detailed logging
       print('=== SENDING VERIFICATION EMAIL ===');
@@ -268,6 +271,12 @@ class AuthRepository extends GetxController {
         throw SignUpWithEmailAndPasswordFailure.code('email-not-verified');
       }
 
+      // SUCCESS: User is verified and logged in
+      // ONLY NOW create user in Firestore (not during signup)
+      await _createUserInFirestore(refreshedUser!);
+
+      print('=== LOGIN SUCCESSFUL - USER SAVED TO FIRESTORE ===');
+
     } on FirebaseAuthException catch (e) {
 
       final ex = SignUpWithEmailAndPasswordFailure.code(e.code);
@@ -284,6 +293,7 @@ class AuthRepository extends GetxController {
       throw ex;
     }
   }
+
 
   Future<void> logOut() async {
     try {
@@ -355,28 +365,6 @@ class AuthRepository extends GetxController {
     }
   }
 
-// // Updated resendEmailVerification method (if you don't have it)
-//   Future<void> resendEmailVerification() async {
-//     try {
-//       User? user = _auth.currentUser;
-//       if (user != null && !user.emailVerified) {
-//         await user.sendEmailVerification();
-//         _showSnackbar(
-//             "Email Sent",
-//             "Verification email sent successfully",
-//             Colors.green
-//         );
-//       } else {
-//         throw 'No user signed in or email already verified';
-//       }
-//     } on FirebaseAuthException catch (e) {
-//       _showSnackbar("Error", "Failed to send verification email", Colors.red);
-//       throw SignUpWithEmailAndPasswordFailure.code(e.code);
-//     } catch (e) {
-//       _showSnackbar("Error", "Failed to send verification email", Colors.red);
-//       throw e.toString();
-//     }
-//   }
 
   // Improved resend verification email method
   Future<void> resendEmailVerification() async {
@@ -526,6 +514,154 @@ class AuthRepository extends GetxController {
         return 'Internal error sending email. Please try again in a few minutes.';
       default:
         return 'Failed to send verification email. You can request a new one from the login screen.';
+    }
+  }
+
+
+
+
+
+
+
+
+  // Create user document in Firestore .. only called during successfull login
+  Future<void> _createUserInFirestore(User user) async {
+
+    try {
+      // Get the name from Firebase Auth displayName (set during signup)
+      String userName = user.displayName ?? _extractNameFromEmail(user.email ?? '');
+
+      // Check if user already exists in Firestore
+      DocumentSnapshot existingUser = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (existingUser.exists) {
+        print('User already exists in Firestore, updating lastSignIn...');
+        // User exists, just update last sign in
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .update({
+          'lastSignIn': FieldValue.serverTimestamp(),
+          'emailVerified': user.emailVerified,
+        });
+        return;
+      }
+
+
+      Map<String, dynamic> userData = {
+        'uid': user.uid,
+        'email': user.email,
+        'fullName': userName,
+        'phoneNumber': user.phoneNumber,
+        'photoURL': user.photoURL,
+        'emailVerified': user.emailVerified,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastSignIn': FieldValue.serverTimestamp(),
+        'authProvider': 'email', // Track how user signed up
+      };
+
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set(userData, SetOptions(merge: true));
+
+
+
+    } catch (e) {
+      print('=== ERROR CREATING USER IN FIRESTORE ===');
+      print('Error: $e');
+      // Don't throw - authentication was successful, Firestore is secondary
+    }
+  }
+
+  // Extract first name from email
+  String _extractNameFromEmail(String email) {
+    if (email.isEmpty) return 'User';
+
+    String localPart = email.split('@').first;
+
+    // Remove numbers and special characters, capitalize first letter
+    String cleanName = localPart.replaceAll(RegExp(r'[^a-zA-Z]'), '');
+
+    if (cleanName.isEmpty) return 'User';
+
+    return cleanName[0].toUpperCase() + cleanName.substring(1).toLowerCase();
+  }
+
+  // Ensure user exists in Firestore (for login)
+  Future<void> _ensureUserInFirestore(User user) async {
+    try {
+
+      DocumentSnapshot userDoc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        // User doesn't exist in Firestore, create them
+        print('User not found in Firestore, creating...');
+        await _createUserInFirestore(user);
+      } else {
+        // User exists, update last sign in
+        print('User found in Firestore, updating last sign in...');
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .update({
+          'lastSignIn': FieldValue.serverTimestamp(),
+          'emailVerified': user.emailVerified,
+        });
+      }
+
+      print('=== USER FIRESTORE OPERATIONS COMPLETED ===');
+
+    } catch (e) {
+      print('=== ERROR WITH FIRESTORE USER OPERATIONS ===');
+      print('Error: $e');
+      // Don't throw - authentication was successful
+    }
+  }
+
+  // Get user data from Firestore
+  Future<Map<String, dynamic>?> getUserData() async {
+    try {
+      User? user = currentUser;
+      if (user == null) return null;
+
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        return doc.data() as Map<String, dynamic>?;
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user data: $e');
+      return null;
+    }
+  }
+
+  // Update user data in Firestore
+  Future<void> updateUserData(Map<String, dynamic> data) async {
+    try {
+      User? user = currentUser;
+      if (user == null) throw 'No user logged in';
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .update(data);
+
+      print('User data updated successfully');
+    } catch (e) {
+      print('Error updating user data: $e');
+      throw 'Failed to update user data: $e';
     }
   }
 

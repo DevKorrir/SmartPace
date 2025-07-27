@@ -83,11 +83,24 @@ class LoginController extends GetxController {
       print('=== LOGIN SUCCESSFUL - USER IS VERIFIED ===');
 
 
-      // Success - Show success message
-      _showSuccessSnackbar(
-        'Welcome Back!',
-        'Login successful',
-      );
+      // Optionally, get user data from Firestore to confirm
+      final userData = await AuthRepository.instance.getUserData();
+      if (userData != null) {
+        print('User data from Firestore: ${userData['firstName']} (${userData['email']})');
+
+        // You can use this data to personalize the welcome message
+        String firstName = userData['fullName'] ?? 'User';
+        _showSuccessSnackbar(
+          'Welcome Back, $firstName!',
+          'Login successful',
+        );
+      } else {
+        // Success - Show success message
+        // _showSuccessSnackbar(
+        //   'Welcome Back!',
+        //   'Login successful',
+        // );
+      }
 
       // Clear form data
       _clearForm();
