@@ -5,6 +5,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:smart_pace/src/features/authentication/auth_repository/exceptions/sign_up_email_and_password_failure.dart';
 import 'package:flutter/material.dart';
 
+import '../../../routing/navigation/navigation.dart';
+import '../../screens/auth/login/login.dart';
 import '../domain/model/signup_request.dart';
 
 class AuthRepository extends GetxController {
@@ -27,7 +29,6 @@ class AuthRepository extends GetxController {
   var verificationId = ''.obs;
   final resendToken = Rx<int?>(null);
 
-
   @override
   void onInit() {
     super.onInit();
@@ -39,18 +40,14 @@ class AuthRepository extends GetxController {
     Future.delayed(const Duration(seconds: 5));
     firebaseUser = Rx<User?>(_auth.currentUser);
     firebaseUser.bindStream(_auth.userChanges());
-    //ever(firebaseUser, _setInitialScreen);
+    ever(firebaseUser, _setInitialScreen);
   }
 
-  // _setInitialScreen(User? user) {
-  //   user == null
-  //       ? Get.offAll(() => Login())
-  //       : Get.offAll(() => MainNavigation());
-  // }
-
-
-
-
+  _setInitialScreen(User? user) {
+    user == null
+        ? Get.offAll(() => Login())
+        : Get.offAll(() => MainNavigation());
+  }
 
   Future<void> phoneAuthentication(String phoneNo) async {
     try {
@@ -76,7 +73,10 @@ class AuthRepository extends GetxController {
   }
 
   // Common method for phone verification to avoid repetition
-  Future<void> _verifyPhoneNumber(String phoneNo, int? forceResendingToken) async {
+  Future<void> _verifyPhoneNumber(
+    String phoneNo,
+    int? forceResendingToken,
+  ) async {
     await _auth.verifyPhoneNumber(
       phoneNumber: phoneNo,
       timeout: Duration(seconds: forceResendingToken != null ? 60 : 120),
@@ -109,9 +109,10 @@ class AuthRepository extends GetxController {
         this.verificationId.value = verificationId;
         this.resendToken.value = resendToken;
 
-        String message = forceResendingToken != null
-            ? "New verification code sent successfully"
-            : "Verification code sent successfully";
+        String message =
+            forceResendingToken != null
+                ? "New verification code sent successfully"
+                : "Verification code sent successfully";
 
         _showSnackbar("OTP Sent", message, Colors.green);
       },
@@ -175,7 +176,9 @@ class AuthRepository extends GetxController {
         smsCode: otp,
       );
 
-      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
 
       if (userCredential.user != null) {
         print('OTP verification successful. User: ${userCredential.user!.uid}');
@@ -207,14 +210,13 @@ class AuthRepository extends GetxController {
     }
   }
 
-  Future<void> createUserWithEmailAndPassword(
-      SignUpRequest req
-      ) async {
+  Future<void> createUserWithEmailAndPassword(SignUpRequest req) async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: req.email,
-        password: req.password,
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: req.email,
+            password: req.password,
+          );
 
       // Check if user was created
       if (userCredential.user == null) {
@@ -235,9 +237,9 @@ class AuthRepository extends GetxController {
 
       // Show success message instead
       _showSnackbar(
-          "Account Created",
-          "Please check your email to verify your account",
-          Colors.green
+        "Account Created",
+        "Please check your email to verify your account",
+        Colors.green,
       );
 
       // Sign out the user until they verify their email
@@ -257,23 +259,15 @@ class AuthRepository extends GetxController {
     }
   }
 
-
-
-
-
-
-
   Future<void> loginUserWithEmailAndPassword(
-      String email,
-      String password,
-      ) async {
-
+    String email,
+    String password,
+  ) async {
     try {
-
       // sign in the user
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-          email: email,
-          password: password
+        email: email,
+        password: password,
       );
 
       // CRITICAL: Reload user to get latest email verification status
@@ -295,15 +289,11 @@ class AuthRepository extends GetxController {
       await _createUserInFirestore(refreshedUser!);
 
       print('=== LOGIN SUCCESSFUL - USER SAVED TO FIRESTORE ===');
-
     } on FirebaseAuthException catch (e) {
-
       final ex = SignUpWithEmailAndPasswordFailure.code(e.code);
       print('LOGIN EXCEPTION - ${ex.message}');
       throw ex;
-
     } catch (e) {
-
       if (e is SignUpWithEmailAndPasswordFailure) {
         throw e;
       }
@@ -313,44 +303,27 @@ class AuthRepository extends GetxController {
     }
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
+  //for password email auth
   // Create user document in Firestore .. only called during successfull login
   Future<void> _createUserInFirestore(User user) async {
-
     try {
       // Get the name from Firebase Auth displayName (set during signup)
-      String userName = user.displayName ?? _extractNameFromEmail(user.email ?? '');
+      String userName =
+          user.displayName ?? _extractNameFromEmail(user.email ?? '');
 
       // Check if user already exists in Firestore
-      DocumentSnapshot existingUser = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      DocumentSnapshot existingUser =
+          await _firestore.collection('users').doc(user.uid).get();
 
       if (existingUser.exists) {
         print('User already exists in Firestore, updating lastSignIn...');
         // User exists, just update last sign in
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .update({
+        await _firestore.collection('users').doc(user.uid).update({
           'lastSignIn': FieldValue.serverTimestamp(),
           'emailVerified': user.emailVerified,
         });
         return;
       }
-
 
       Map<String, dynamic> userData = {
         'uid': user.uid,
@@ -364,29 +337,16 @@ class AuthRepository extends GetxController {
         'authProvider': 'email', // Track how user signed up
       };
 
-
       await _firestore
           .collection('users')
           .doc(user.uid)
           .set(userData, SetOptions(merge: true));
-
-
-
     } catch (e) {
       print('=== ERROR CREATING USER IN FIRESTORE ===');
       print('Error: $e');
       // Don't throw - authentication was successful, Firestore is secondary
     }
   }
-
-
-
-
-
-
-
-
-
 
   // Initialize Google Sign-In (required in v7)
   Future<void> _initializeGoogleSignIn() async {
@@ -411,15 +371,8 @@ class AuthRepository extends GetxController {
     }
   }
 
-
-
-
-
-
-
   // Handle Google Sign In with phone number collection
   Future<UserCredential> signInWithGoogle() async {
-
     try {
       print('=== STARTING GOOGLE SIGN IN ===');
 
@@ -450,56 +403,102 @@ class AuthRepository extends GetxController {
         idToken: googleAuth.idToken,
       );
 
-      // Step 3: Check if user already exists in Firebase Auth
+      // Step 4: Check if user already exists in Firebase Auth
       User? existingUser;
       bool hasPhoneNumber = false;
+      String? existingPhoneNumber;
+
       try {
+        print('=== STARTING USER DETECTION ===');
+        print('Google user email: ${googleUser.email}');
+
         // Try to link the credential to see if user exists
-        final signInMethods = await _auth.fetchSignInMethodsForEmail(googleUser.email);
+        final signInMethods = await _auth.fetchSignInMethodsForEmail(
+          googleUser.email,
+        );
 
         if (signInMethods.isNotEmpty) {
+          print('✅ User exists in Firebase Auth');
+
           // User exists, sign them in
           final tempCredential = await _auth.signInWithCredential(credential);
           existingUser = tempCredential.user;
 
           if (existingUser != null) {
-          // Check if they already have phone number in Firestore
-            final userDoc = await _firestore
-              .collection('users')
-              .doc(existingUser.uid)
-              .get();
+            print('Checking Firestore for user: ${existingUser.uid}');
 
-          if (userDoc.exists) {
-            final userData = userDoc as Map<String, dynamic>?;
-            final phoneNumber = userData?['phoneNumber']?.toString();
+            // Check if they already have phone number in Firestore
+            final userDoc =
+                await _firestore
+                    .collection('users')
+                    .doc(existingUser.uid)
+                    .get();
+            print('Firestore document exists: ${userDoc.exists}');
 
-            if (phoneNumber != null && phoneNumber.isNotEmpty && phoneNumber != 'null') {
-              hasPhoneNumber = true;
-              print('Existing user found with phone number: $phoneNumber');
+            if (userDoc.exists) {
+              final userData = userDoc.data();
+              existingPhoneNumber = userData?['phoneNumber']?.toString();
+
+              // phone number validation
+              if (existingPhoneNumber != null &&
+                  existingPhoneNumber.isNotEmpty &&
+                  existingPhoneNumber != 'null' &&
+                  existingPhoneNumber.length >= 10) {
+                hasPhoneNumber = true;
+                print(
+                  'Existing user found with phone number: $existingPhoneNumber',
+                );
+              } else {
+                print('EXISTING USER: Missing or invalid phone number');
+                print('WILL REQUEST PHONE NUMBER');
+              }
+
+              // Log user creation method for debugging
+              final authProvider =
+                  userData?['authProvider']?.toString() ?? 'unknown';
+              print('User originally created via: $authProvider');
+            } else {
+              print('USER NOT FOUND IN FIRESTORE: Will create new profile');
             }
-            // if (userData != null && userData['phoneNumber'] != null && userData['phoneNumber'].toString().isNotEmpty) {
-            //   // User has phone number, just update last sign in and proceed
-            //   await _updateGoogleUserInFirestore(existingUser);
-            //   print('=== EXISTING GOOGLE USER SIGNED IN SUCCESSFULLY ===');
-             }
           }
+        } else {
+          print('not firebase auth record found');
         }
       } catch (e) {
         print('Error checking existing user: $e');
+        //continue with the flow
       }
 
       // Step 5: If existing user has phone number, just update and proceed
       if (existingUser != null && hasPhoneNumber) {
         await _updateGoogleUserInFirestore(existingUser);
         print('=== EXISTING GOOGLE USER SIGNED IN SUCCESSFULLY ===');
+
+        // Show welcome back message
+        _showSnackbar(
+          "Welcome Back!",
+          "Signed in as ${existingUser.displayName ?? existingUser.email}",
+          Colors.green,
+        );
+
         return await _auth.signInWithCredential(credential);
       }
 
       // Step 6: Show phone number dialog
-      final phoneNumber = await _showPhoneNumberDialog(googleUser.displayName ?? 'User');
+      print('PHONE NUMBER REQUIRED');
+      final isNewUser = existingUser == null;
+      final welcomeMessage =
+          isNewUser
+              ? 'Welcome to SmartPace!'
+              : 'We need your phone number to complete your profile.';
+
+      final phoneNumber = await _showPhoneNumberDialog(
+        googleUser.displayName ?? 'User',
+        isNewUser: isNewUser,
+        customMessage: welcomeMessage,
+      );
 
       if (phoneNumber == null || phoneNumber.isEmpty) {
-
         // User cancelled phone number input, sign out from Google
         await _googleSignIn.signOut();
         _currentGoogleUser = null;
@@ -524,7 +523,6 @@ class AuthRepository extends GetxController {
       }
 
       final user = userCredential.user;
-
       if (user == null) {
         throw 'Failed to sign in with Google';
       }
@@ -534,7 +532,6 @@ class AuthRepository extends GetxController {
 
       print('=== GOOGLE SIGN IN COMPLETED SUCCESSFULLY ===');
       return userCredential;
-
     } catch (e) {
       print('=== GOOGLE SIGN IN ERROR ===');
       print('Error: $e');
@@ -542,14 +539,17 @@ class AuthRepository extends GetxController {
       // Clean up on error
       try {
         await _googleSignIn.signOut();
-        if (_auth.currentUser != null) {
+        _currentGoogleUser = null;
+
+        final currentUser = _auth.currentUser;
+        if (currentUser != null) {
           await _auth.signOut();
         }
       } catch (cleanupError) {
         print('Error during cleanup: $cleanupError');
       }
 
-      throw e.toString();
+      rethrow; // Rethrow the original error
     }
   }
 
@@ -599,21 +599,85 @@ class AuthRepository extends GetxController {
   }
 
   // Show phone number input dialog
-  Future<String?> _showPhoneNumberDialog(String userName) async {
+  Future<String?> _showPhoneNumberDialog(
+    String userName, {
+    bool isNewUser = false,
+    String? customMessage,
+  }) async {
     final phoneController = TextEditingController();
-    String? result;
+    String? result; // This will hold the final result
+
+    final dialogTitle =
+        isNewUser
+            ? 'Welcome to Smart Pace, $userName!'
+            : 'Complete Your Profile, $userName!';
+
+    final dialogMessage =
+        customMessage ??
+        (isNewUser
+            ? 'To get started, please provide your phone number:'
+            : 'We need your phone number to complete your account:');
+
+    final iconColor = isNewUser ? Colors.green : Colors.orange;
+    final icon = isNewUser ? Icons.person_add : Icons.phone_outlined;
 
     await Get.dialog(
       AlertDialog(
-        title: Text('Welcome, $userName!'),
+        title: Row(
+          children: [
+            Icon(icon, color: iconColor, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                dialogTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'To complete your registration, please provide your phone number:',
-              style: TextStyle(fontSize: 16),
+            Text(dialogMessage, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 16),
+
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: (isNewUser ? Colors.green : Colors.orange)[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: (isNewUser ? Colors.green : Colors.orange)[200]!,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isNewUser ? Icons.new_label : Icons.update,
+                    color: iconColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isNewUser
+                          ? 'New account - Setting up your profile'
+                          : 'Existing account - Updating your information',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: (isNewUser ? Colors.green : Colors.orange)[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+
             const SizedBox(height: 16),
             TextField(
               controller: phoneController,
@@ -623,9 +687,20 @@ class AuthRepository extends GetxController {
                 hintText: '+254712345678',
                 prefixIcon: Icon(Icons.phone),
                 border: OutlineInputBorder(),
+                helperText: 'Required for account verification and security',
               ),
-              onChanged: (value) {
-                // You can add phone number validation here
+              onSubmitted: (_) {
+                // Handle submission directly here
+                String phone = phoneController.text.trim();
+                if (phone.isNotEmpty && phone.length >= 10) {
+                  if (!phone.startsWith('+')) {
+                    phone = '+254$phone';
+                  }
+                  if (_isValidPhoneNumber(phone)) {
+                    result = phone;
+                    Get.back();
+                  }
+                }
               },
             ),
             const SizedBox(height: 8),
@@ -645,24 +720,39 @@ class AuthRepository extends GetxController {
           ),
           ElevatedButton(
             onPressed: () {
+              // Handle submission directly here
               String phone = phoneController.text.trim();
               if (phone.isNotEmpty && phone.length >= 10) {
-                // Ensure phone number starts with +
                 if (!phone.startsWith('+')) {
-                  phone = '+254$phone'; // Default to Kenya code, adjust as needed
+                  phone = '+254$phone';
                 }
-                result = phone;
-                Get.back();
+                if (_isValidPhoneNumber(phone)) {
+                  result = phone;
+                  Get.back();
+                } else {
+                  Get.snackbar(
+                    'Invalid Format',
+                    'Please enter a valid phone number with country code',
+                    backgroundColor: Colors.red[100],
+                    colorText: Colors.red[800],
+                    duration: const Duration(seconds: 2),
+                  );
+                }
               } else {
                 Get.snackbar(
-                  'Invalid Phone',
+                  'Phone Required',
                   'Please enter a valid phone number',
                   backgroundColor: Colors.red[100],
                   colorText: Colors.red[800],
+                  duration: const Duration(seconds: 2),
                 );
               }
             },
-            child: const Text('Continue'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: iconColor,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(isNewUser ? 'Complete Setup' : 'Update Profile'),
           ),
         ],
       ),
@@ -672,38 +762,73 @@ class AuthRepository extends GetxController {
     return result;
   }
 
-
-
-
-
+  // Validate phone number format
+  bool _isValidPhoneNumber(String phone) {
+    // Basic validation for international phone numbers
+    final phoneRegex = RegExp(r'^\+[1-9]\d{1,14}$');
+    return phoneRegex.hasMatch(phone) &&
+        phone.length >= 10 &&
+        phone.length <= 16;
+  }
 
   // Create Google user in Firestore with phone number
-  Future<void> _createGoogleUserInFirestore(User user, String phoneNumber) async {
+  Future<void> _createGoogleUserInFirestore(
+    User user,
+    String phoneNumber,
+  ) async {
     try {
       print('=== CREATING GOOGLE USER IN FIRESTORE ===');
-      print('User ID: ${user.uid}');
-      print('Email: ${user.email}');
-      print('Phone: $phoneNumber');
+
+      // Check if user already exists to preserve existing data
+      final existingDoc =
+          await _firestore.collection('users').doc(user.uid).get();
 
       Map<String, dynamic> userData = {
         'uid': user.uid,
         'email': user.email,
-        'name': user.displayName ?? _extractNameFromEmail(user.email ?? ''),
+        'fullName': user.displayName ?? _extractNameFromEmail(user.email ?? ''),
         'phoneNumber': phoneNumber,
         'photoURL': user.photoURL,
         'emailVerified': user.emailVerified,
-        'createdAt': FieldValue.serverTimestamp(),
+        //'createdAt': FieldValue.serverTimestamp(),
         'lastSignIn': FieldValue.serverTimestamp(),
         'authProvider': 'google', // Track how user signed up
       };
 
+      // Only set createdAt for truly new users
+      if (!existingDoc.exists) {
+        userData['createdAt'] = FieldValue.serverTimestamp();
+        print('Creating new user profile');
+      } else {
+        print('Updating existing user profile');
+
+        // Preserve original creation date and auth provider if it exists
+        final existingData = existingDoc.data() as Map<String, dynamic>?;
+        if (existingData?['createdAt'] != null) {
+          // Don't overwrite createdAt
+          userData.remove('createdAt');
+        }
+
+        // If user was originally created via email, preserve that
+        final originalAuthProvider = existingData?['authProvider']?.toString();
+        if (originalAuthProvider != null && originalAuthProvider != 'google') {
+          userData['authProvider'] = originalAuthProvider;
+          userData['googleLinked'] = true; // Indicate Google was linked
+          print(
+            '🔗 User originally created via $originalAuthProvider, linking Google',
+          );
+        }
+      }
+
       await _firestore
           .collection('users')
           .doc(user.uid)
-          .set(userData, SetOptions(merge: true));
+          .set(
+            userData,
+            SetOptions(merge: true),
+          ); // merging same email diff authprovider
 
       print('=== GOOGLE USER CREATED IN FIRESTORE SUCCESSFULLY ===');
-
     } catch (e) {
       print('=== ERROR CREATING GOOGLE USER IN FIRESTORE ===');
       print('Error: $e');
@@ -711,35 +836,24 @@ class AuthRepository extends GetxController {
     }
   }
 
-
-
-
   // Update existing Google user in Firestore
   Future<void> _updateGoogleUserInFirestore(User user) async {
     try {
       print('=== UPDATING GOOGLE USER IN FIRESTORE ===');
 
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .update({
+      await _firestore.collection('users').doc(user.uid).update({
         'lastSignIn': FieldValue.serverTimestamp(),
         'emailVerified': user.emailVerified,
         'photoURL': user.photoURL, // Update in case it changed
       });
 
       print('=== GOOGLE USER UPDATED IN FIRESTORE SUCCESSFULLY ===');
-
     } catch (e) {
       print('=== ERROR UPDATING GOOGLE USER IN FIRESTORE ===');
       print('Error: $e');
       // Don't throw - authentication was successful
     }
   }
-
-
-
-
 
   // Extract first name from email
   String _extractNameFromEmail(String email) {
@@ -755,50 +869,14 @@ class AuthRepository extends GetxController {
     return cleanName[0].toUpperCase() + cleanName.substring(1).toLowerCase();
   }
 
-  // // Ensure user exists in Firestore (for login)
-  // Future<void> _ensureUserInFirestore(User user) async {
-  //   try {
-  //
-  //     DocumentSnapshot userDoc = await _firestore
-  //         .collection('users')
-  //         .doc(user.uid)
-  //         .get();
-  //
-  //     if (!userDoc.exists) {
-  //       // User doesn't exist in Firestore, create them
-  //       print('User not found in Firestore, creating...');
-  //       await _createUserInFirestore(user);
-  //     } else {
-  //       // User exists, update last sign in
-  //       print('User found in Firestore, updating last sign in...');
-  //       await _firestore
-  //           .collection('users')
-  //           .doc(user.uid)
-  //           .update({
-  //         'lastSignIn': FieldValue.serverTimestamp(),
-  //         'emailVerified': user.emailVerified,
-  //       });
-  //     }
-  //
-  //     print('=== USER FIRESTORE OPERATIONS COMPLETED ===');
-  //
-  //   } catch (e) {
-  //     print('=== ERROR WITH FIRESTORE USER OPERATIONS ===');
-  //     print('Error: $e');
-  //     // Don't throw - authentication was successful
-  //   }
-  // }
-
   // Get user data from Firestore
   Future<Map<String, dynamic>?> getUserData() async {
     try {
-      User? user = currentUser;
+      final user = currentUser;
       if (user == null) return null;
 
-      DocumentSnapshot doc = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      DocumentSnapshot doc =
+          await _firestore.collection('users').doc(user.uid).get();
 
       if (doc.exists) {
         return doc.data() as Map<String, dynamic>?;
@@ -816,10 +894,7 @@ class AuthRepository extends GetxController {
       User? user = currentUser;
       if (user == null) throw 'No user logged in';
 
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .update(data);
+      await _firestore.collection('users').doc(user.uid).update(data);
 
       print('User data updated successfully');
     } catch (e) {
@@ -827,7 +902,6 @@ class AuthRepository extends GetxController {
       throw 'Failed to update user data: $e';
     }
   }
-
 
   Future<void> logOut() async {
     try {
@@ -842,8 +916,6 @@ class AuthRepository extends GetxController {
       throw 'Logout failed: ${e.toString()}';
     }
   }
-
-
 
   void _showSnackbar(String title, String message, Color backgroundColor) {
     Get.snackbar(
@@ -860,8 +932,11 @@ class AuthRepository extends GetxController {
 
   // Utility getters and methods
   User? get currentUser => _auth.currentUser;
+
   bool get isSignedIn => _auth.currentUser != null;
+
   String? get currentUserPhone => _auth.currentUser?.phoneNumber;
+
   String? get currentUserEmail => _auth.currentUser?.email;
 
   void clearVerificationData() {
@@ -869,17 +944,14 @@ class AuthRepository extends GetxController {
     resendToken.value = null;
   }
 
-
-
-
   // Send password reset email
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
       _showSnackbar(
-          "Reset Email Sent",
-          "Password reset instructions sent to your email",
-          Colors.green
+        "Reset Email Sent",
+        "Password reset instructions sent to your email",
+        Colors.green,
       );
     } on FirebaseAuthException catch (e) {
       String errorMessage = _getPasswordResetErrorMessage(e.code);
@@ -891,7 +963,7 @@ class AuthRepository extends GetxController {
     }
   }
 
-// Get error messages for password reset
+  // Get error messages for password reset
   String _getPasswordResetErrorMessage(String errorCode) {
     switch (errorCode) {
       case 'user-not-found':
@@ -906,7 +978,6 @@ class AuthRepository extends GetxController {
         return 'Failed to send password reset email. Please try again.';
     }
   }
-
 
   // Improved resend verification email method
   Future<void> resendEmailVerification() async {
@@ -923,31 +994,34 @@ class AuthRepository extends GetxController {
 
       if (user?.emailVerified == true) {
         _showSnackbar(
-            "Already Verified",
-            "Your email is already verified. You can sign in now.",
-            Colors.green
+          "Already Verified",
+          "Your email is already verified. You can sign in now.",
+          Colors.green,
         );
         return;
       }
 
       await _sendVerificationEmailWithRetry(user!, 0);
-
     } catch (e) {
       print('Resend verification error: $e');
       _showSnackbar(
-          "Resend Failed",
-          "Could not resend verification email. Please try again later.",
-          Colors.red
+        "Resend Failed",
+        "Could not resend verification email. Please try again later.",
+        Colors.red,
       );
       throw e.toString();
     }
   }
 
-
   // Send verification email with retry logic
-  Future<void> _sendVerificationEmailWithRetry(User user, [int retryCount = 0]) async {
+  Future<void> _sendVerificationEmailWithRetry(
+    User user, [
+    int retryCount = 0,
+  ]) async {
     try {
-      print('Attempting to send verification email (attempt ${retryCount + 1})');
+      print(
+        'Attempting to send verification email (attempt ${retryCount + 1})',
+      );
 
       // Reload user to get latest state
       await user.reload();
@@ -991,10 +1065,7 @@ class AuthRepository extends GetxController {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: const Text('OK'),
-            ),
+            TextButton(onPressed: () => Get.back(), child: const Text('OK')),
             TextButton(
               onPressed: () async {
                 Get.back();
@@ -1005,7 +1076,6 @@ class AuthRepository extends GetxController {
           ],
         ),
       );
-
     } on FirebaseAuthException catch (e) {
       print('=== EMAIL VERIFICATION ERROR ===');
       print('Error Code: ${e.code}');
@@ -1024,7 +1094,6 @@ class AuthRepository extends GetxController {
 
       // Don't throw - account was created successfully, just email failed
       print('Continuing despite email error - user can request resend later');
-
     } catch (e) {
       print('=== UNEXPECTED EMAIL ERROR ===');
       print('Error: $e');
@@ -1036,9 +1105,9 @@ class AuthRepository extends GetxController {
       }
 
       _showSnackbar(
-          "Email Issue",
-          "Account created but verification email may be delayed. Check your email shortly.",
-          Colors.orange
+        "Email Issue",
+        "Account created but verification email may be delayed. Check your email shortly.",
+        Colors.orange,
       );
     }
   }
@@ -1058,20 +1127,4 @@ class AuthRepository extends GetxController {
         return 'Failed to send verification email. You can request a new one from the login screen.';
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
