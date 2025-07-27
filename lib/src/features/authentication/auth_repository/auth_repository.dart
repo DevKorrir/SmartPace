@@ -3,11 +3,8 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:smart_pace/src/features/authentication/auth_repository/exceptions/sign_up_email_and_password_failure.dart';
-import 'package:smart_pace/src/routing/navigation/navigation.dart';
 import 'package:flutter/material.dart';
 
-import '../../screens/auth/login/login.dart';
-import '../../screens/welcome_screen/welcome_screen.dart';
 import '../domain/model/signup_request.dart';
 
 class AuthRepository extends GetxController {
@@ -16,13 +13,26 @@ class AuthRepository extends GetxController {
   // Variables
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
+
+  // For google_sign_in ^7.1.1, use GoogleSignIn.instance
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  bool _isGoogleSignInInitialized = false;
+
+  // Manual user state management (required in v7)
+  GoogleSignInAccount? _currentGoogleUser;
+
+  //final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   //final _googleSignIn = GoogleSignIn();
   late final Rx<User?> firebaseUser;
   var verificationId = ''.obs;
   final resendToken = Rx<int?>(null);
 
 
+  @override
+  void onInit() {
+    super.onInit();
+    _initializeGoogleSignIn();
+  }
 
   @override
   void onReady() {
@@ -37,6 +47,10 @@ class AuthRepository extends GetxController {
   //       ? Get.offAll(() => Login())
   //       : Get.offAll(() => MainNavigation());
   // }
+
+
+
+
 
   Future<void> phoneAuthentication(String phoneNo) async {
     try {
@@ -368,29 +382,71 @@ class AuthRepository extends GetxController {
 
 
 
+
+
+
+
+
+
+  // Initialize Google Sign-In (required in v7)
+  Future<void> _initializeGoogleSignIn() async {
+    try {
+      await _googleSignIn.initialize();
+      _isGoogleSignInInitialized = true;
+      print('=== GOOGLE SIGN IN INITIALIZED SUCCESSFULLY ===');
+    } catch (e) {
+      print('Failed to initialize Google Sign-In: $e');
+      _isGoogleSignInInitialized = false;
+    }
+  }
+
+  // Ensure Google Sign-In is initialized before use
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (!_isGoogleSignInInitialized) {
+      await _initializeGoogleSignIn();
+    }
+
+    if (!_isGoogleSignInInitialized) {
+      throw 'Google Sign-In initialization failed';
+    }
+  }
+
+
+
+
+
+
+
   // Handle Google Sign In with phone number collection
   Future<UserCredential> signInWithGoogle() async {
-
-    await _googleSignIn.initialize();
 
     try {
       print('=== STARTING GOOGLE SIGN IN ===');
 
-      // Step 1: trigger auth flow
-      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate();
+      // Ensure Google Sign-In is initialized
+      await _ensureGoogleSignInInitialized();
 
-      if (googleUser == null) {
-        // User cancelled the sign-in
-        throw 'Google sign-in was cancelled';
+      // Step 1: trigger auth flow
+      final GoogleSignInAccount googleUser;
+
+      try {
+        googleUser = await _googleSignIn.authenticate(
+          scopeHint: ['email'], // Specify required scopes
+        );
+      } on GoogleSignInException catch (e) {
+        print('Google Sign In error: ${e.code.name} - ${e.description}');
+        throw _handleGoogleSignInException(e);
       }
 
-      print('Google user signed in: ${googleUser.email}');
+      print('Google user authenticated: ${googleUser.email}');
+      _currentGoogleUser = googleUser; // Update manual state
 
       // Step 2: Get Google authentication credentials
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
-      //creaye fire credetial
+      // 3 create fire credential
       final credential = GoogleAuthProvider.credential(
+        //accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
@@ -399,23 +455,23 @@ class AuthRepository extends GetxController {
       bool hasPhoneNumber = false;
       try {
         // Try to link the credential to see if user exists
-        List<String> signInMethods = await _auth.fetchSignInMethodsForEmail(googleUser.email);
+        final signInMethods = await _auth.fetchSignInMethodsForEmail(googleUser.email);
 
         if (signInMethods.isNotEmpty) {
           // User exists, sign them in
-          UserCredential userCredential = await _auth.signInWithCredential(credential);
-          existingUser = userCredential.user;
+          final tempCredential = await _auth.signInWithCredential(credential);
+          existingUser = tempCredential.user;
 
           if (existingUser != null) {
           // Check if they already have phone number in Firestore
-          DocumentSnapshot userDoc = await _firestore
+            final userDoc = await _firestore
               .collection('users')
               .doc(existingUser.uid)
               .get();
 
           if (userDoc.exists) {
-            Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
-            String? phoneNumber = userData?['phoneNumber']?.toString();
+            final userData = userDoc as Map<String, dynamic>?;
+            final phoneNumber = userData?['phoneNumber']?.toString();
 
             if (phoneNumber != null && phoneNumber.isNotEmpty && phoneNumber != 'null') {
               hasPhoneNumber = true;
@@ -432,32 +488,42 @@ class AuthRepository extends GetxController {
         print('Error checking existing user: $e');
       }
 
-      // Step 4: If existing user has phone number, just update and proceed
+      // Step 5: If existing user has phone number, just update and proceed
       if (existingUser != null && hasPhoneNumber) {
         await _updateGoogleUserInFirestore(existingUser);
         print('=== EXISTING GOOGLE USER SIGNED IN SUCCESSFULLY ===');
         return await _auth.signInWithCredential(credential);
       }
 
-      // Step 5: Show phone number dialog
-      String? phoneNumber = await _showPhoneNumberDialog(googleUser.displayName ?? 'User');
+      // Step 6: Show phone number dialog
+      final phoneNumber = await _showPhoneNumberDialog(googleUser.displayName ?? 'User');
 
       if (phoneNumber == null || phoneNumber.isEmpty) {
 
         // User cancelled phone number input, sign out from Google
         await _googleSignIn.signOut();
+        _currentGoogleUser = null;
 
-        if (_auth.currentUser != null) {
+        final currentUser = _auth.currentUser;
+
+        if (currentUser != null) {
           await _auth.signOut();
         }
 
         throw 'Phone number is required to complete registration';
       }
 
-      // Step 6: Sign in with Firebase using Google credentials
-      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      // Step 7: Sign in with Firebase using Google credentials
+      UserCredential userCredential;
+      if (existingUser != null) {
+        // User already signed in during check, just continue
+        userCredential = await _auth.signInWithCredential(credential);
+      } else {
+        // Sign in new user
+        userCredential = await _auth.signInWithCredential(credential);
+      }
 
-      User? user = userCredential.user;
+      final user = userCredential.user;
 
       if (user == null) {
         throw 'Failed to sign in with Google';
@@ -484,6 +550,51 @@ class AuthRepository extends GetxController {
       }
 
       throw e.toString();
+    }
+  }
+
+  // Handle Google Sign-In exceptions with user-friendly messages
+  String _handleGoogleSignInException(GoogleSignInException exception) {
+    switch (exception.code.name) {
+      case 'canceled':
+        return 'Google sign-in was cancelled. Please try again if you want to continue.';
+      case 'interrupted':
+        return 'Google sign-in was interrupted. Please try again.';
+      case 'clientConfigurationError':
+        return 'There is a configuration issue with Google Sign-In. Please contact support.';
+      case 'providerConfigurationError':
+        return 'Google Sign-In is currently unavailable. Please try again later.';
+      case 'uiUnavailable':
+        return 'Google Sign-In is currently unavailable. Please try again later.';
+      case 'userMismatch':
+        return 'There was an issue with your account. Please sign out and try again.';
+      case 'unknownError':
+      default:
+        return 'An unexpected error occurred during Google Sign-In. Please try again.';
+    }
+  }
+
+  // Attempt silent sign-in (replaces signInSilently() in v7)
+  Future<GoogleSignInAccount?> attemptSilentSignIn() async {
+    try {
+      await _ensureGoogleSignInInitialized();
+
+      // attemptLightweightAuthentication can return Future or immediate result
+      final result = _googleSignIn.attemptLightweightAuthentication();
+
+      // Handle both sync and async returns
+      if (result is Future<GoogleSignInAccount?>) {
+        final account = await result;
+        _currentGoogleUser = account;
+        return account;
+      } else {
+        final account = result as GoogleSignInAccount?;
+        _currentGoogleUser = account;
+        return account;
+      }
+    } catch (error) {
+      print('Silent sign-in failed: $error');
+      return null;
     }
   }
 
@@ -723,6 +834,7 @@ class AuthRepository extends GetxController {
       // Sign out from both Firebase Auth and Google Sign In
       await _auth.signOut();
       await _googleSignIn.signOut();
+      _currentGoogleUser = null;
       clearVerificationData();
       print('=== LOGOUT SUCCESSFUL ===');
     } catch (e) {

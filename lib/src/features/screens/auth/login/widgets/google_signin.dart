@@ -9,7 +9,8 @@ class GoogleSignin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        final LoginController controller = Get.put(LoginController());
+        //final LoginController controller = Get.put(LoginController());
+        final LoginController controller = Get.find<LoginController>();
 
     return  Obx(() => Container(
       height: 56,

@@ -134,12 +134,16 @@ class LoginController extends GetxController {
     try {
       isLoading.value = true;
 
+      print('=== STARTING GOOGLE SIGN IN FROM CONTROLLER ===');
+
       // This will handle the entire Google Sign In flow:
       // 1. Google authentication
       // 2. Phone number collection
       // 3. Firebase Auth sign in
       // 4. Firestore user creation
-      await AuthRepository.instance.signInWithGoogle();
+      UserCredential? userCredential = await AuthRepository.instance.signInWithGoogle();
+
+      if (userCredential != null && userCredential.user != null) {
 
       // If we reach here, user is signed in and saved to Firestore
       print('=== GOOGLE SIGN IN SUCCESSFUL ===');
@@ -164,6 +168,10 @@ class LoginController extends GetxController {
 
       // Navigate to main app
       Get.offAll(() => MainNavigation());
+
+      } else {
+        throw 'Google Sign In failed - no user credential returned';
+      }
 
     } catch (e) {
       print('Google Sign In error: $e');

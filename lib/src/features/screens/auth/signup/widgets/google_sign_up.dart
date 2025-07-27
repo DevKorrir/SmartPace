@@ -4,13 +4,15 @@ import 'package:get/get.dart';
 import '../../../../../constants/image_string.dart';
 import '../../../../authentication/controllers/sign_up_controller.dart'
     show SignUpController;
+import '../../login/login_controller.dart';
 
 class GoogleSignUp extends StatelessWidget {
   const GoogleSignUp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final SignUpController controller = Get.put(SignUpController());
+    //final SignUpController controller = Get.put(SignUpController());
+    final LoginController controller = Get.find<LoginController>();
 
     return Obx(
       () => Container(
@@ -29,7 +31,7 @@ class GoogleSignUp extends StatelessWidget {
         ),
         child: OutlinedButton.icon(
           onPressed:
-              controller.isLoading.value ? null : controller.handleGoogleSignUp,
+              controller.isLoading.value ? null : controller.handleGoogleSignIn,
           icon:
               controller.isLoading.value
                   ? const SizedBox(
