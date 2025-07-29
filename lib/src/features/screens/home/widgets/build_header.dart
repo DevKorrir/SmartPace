@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
@@ -5,7 +6,8 @@ import '../controllers/home_controller.dart';
 class DashboardHeader extends StatelessWidget {
   DashboardHeader({super.key});
 
-  final HomeController controller = Get.put(HomeController());
+  //final HomeController controller = Get.put(HomeController());
+  final user = FirebaseAuth.instance.currentUser;
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -16,16 +18,18 @@ class DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() => Row(
+    final userName = user?.displayName ?? 'User';
+
+    return /*Obx(() => */Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Good ${_getGreeting()}, ${controller.userName.value}! 👋',
+              'Good ${_getGreeting()}, $userName! 👋',
               style: const TextStyle(
-                fontSize: 24,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -60,6 +64,6 @@ class DashboardHeader extends StatelessWidget {
           ),
         ),
       ],
-    ));
+    );
   }
 }
