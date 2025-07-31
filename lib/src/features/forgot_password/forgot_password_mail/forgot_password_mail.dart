@@ -13,6 +13,9 @@ class ForgotPasswordMailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ForgotPasswordController controller =
+        Get.find<ForgotPasswordController>();
+
     return SafeArea(
       child: Scaffold(
         body: Container(
@@ -33,33 +36,79 @@ class ForgotPasswordMailScreen extends StatelessWidget {
                 Form(
                   child: Column(
                     children: [
-                      TextFormField(
-                        decoration: InputDecoration(
-                          label: Text(tEmail),
-                          hintText: tEmail,
-                          prefixIcon: Icon(Icons.email_outlined),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      Obx(
+                        () => TextFormField(
+                          controller: controller.emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          enabled: !controller.isLoading.value,
+                          onChanged: controller.validateEmail,
+                          decoration: InputDecoration(
+                            label: Text(tEmail),
+                            hintText: tEmail,
+                            prefixIcon: Icon(Icons.email_outlined),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            errorText:
+                                controller.emailError.value.isEmpty
+                                    ? null
+                                    : controller.emailError.value,
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.red),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 30.0,),
+                const SizedBox(height: 30.0),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {Get.to(()=> OtpScreen());},
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: tWhiteColor,
-                      backgroundColor: tSecondaryColor,
-                      side: BorderSide(color: tSecondaryColor),
-                      padding: EdgeInsets.symmetric(
-                        vertical: tButtonHeight,
+                  child: Obx(
+                    () => ElevatedButton(
+                      onPressed:
+                          controller.isLoading.value
+                              ? null
+                              : controller.handlePasswordReset,
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: tWhiteColor,
+                        backgroundColor: tSecondaryColor,
+                        side: BorderSide(color: tSecondaryColor),
+                        padding: EdgeInsets.symmetric(vertical: tButtonHeight),
+                        disabledBackgroundColor: Colors.grey[300],
+                      ),
+                      child:
+                          controller.isLoading.value
+                              ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    tWhiteColor,
+                                  ),
+                                ),
+                              )
+                              : Text(tResetPassword.toUpperCase()),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+                // Back to login button
+                Obx(
+                  () => TextButton(
+                    onPressed:
+                        controller.isLoading.value ? null : () => Get.back(),
+                    child: Text(
+                      'Back to Login',
+                      style: TextStyle(
+                        color: tSecondaryColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    child: Text(tResetPassword.toUpperCase()),
                   ),
                 ),
               ],
