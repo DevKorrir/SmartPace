@@ -378,65 +378,6 @@ class LoginController extends GetxController {
     }
   }
 
-  // Future<void> handleGoogleSignIn() async {
-  //   try {
-  //     isLoading.value = true;
-  //
-  //     await Future.delayed(const Duration(seconds: 1));
-  //
-  //     Get.offAll(() => MainNavigation());
-  //   } catch (e) {
-  //     Get.snackbar(
-  //       'Error',
-  //       'Google Sign In failed',
-  //       snackPosition: SnackPosition.BOTTOM,
-  //       backgroundColor: Colors.red[100],
-  //       colorText: Colors.red[800],
-  //     );
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-
-  // Handle forgot password
-  Future<void> handleForgotPassword() async {
-    if (emailController.text.isEmpty) {
-      _showErrorSnackbar(
-        'Email Required',
-        'Please enter your email address first.',
-      );
-      return;
-    }
-
-    if (!GetUtils.isEmail(emailController.text)) {
-      _showErrorSnackbar(
-        'Invalid Email',
-        'Please enter a valid email address.',
-      );
-      return;
-    }
-
-    try {
-      isLoading.value = true;
-
-      // You'll need to add this method to your AuthRepository
-      await AuthRepository.instance.sendPasswordResetEmail(emailController.text.trim());
-
-      _showSuccessSnackbar(
-        'Reset Email Sent',
-        'Password reset instructions have been sent to your email.',
-      );
-
-    } catch (e) {
-      _showErrorSnackbar(
-        'Reset Failed',
-        'Could not send password reset email. Please try again.',
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
   // Navigate to forgot password
   void navigateToForgotPassword() {
     ForgotPasswordScreen.buildShowModalBottomSheet(Get.context!);

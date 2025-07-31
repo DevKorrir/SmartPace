@@ -14,8 +14,7 @@ class ForgotPasswordMailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ForgotPasswordController controller =
-        Get.find<ForgotPasswordController>();
+    final ForgotPasswordController controller = Get.find<ForgotPasswordController>();
 
     return SafeArea(
       child: Scaffold(
