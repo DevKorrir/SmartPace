@@ -40,7 +40,7 @@ class AuthRepository extends GetxController {
     Future.delayed(const Duration(seconds: 5));
     firebaseUser = Rx<User?>(_auth.currentUser);
     firebaseUser.bindStream(_auth.userChanges());
-    ever(firebaseUser, _setInitialScreen);
+    //ever(firebaseUser, _setInitialScreen);
   }
 
   _setInitialScreen(User? user) {

@@ -35,6 +35,7 @@ const String tForgotPhoneSubtitle = "Enter your registered Phone No to receive O
 // Forgot Mail Password
 const String tForgotMailSubtitle = "Enter your registered Email No to receive OTP";
 const String tNext ="Next";
+const String tResetPassword = "Reset Password";
 
 // OTP
 const String tOtpTitle = "CO \nDE";

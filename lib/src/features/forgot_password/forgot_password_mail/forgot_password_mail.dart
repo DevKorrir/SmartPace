@@ -59,7 +59,7 @@ class ForgotPasswordMailScreen extends StatelessWidget {
                         vertical: tButtonHeight,
                       ),
                     ),
-                    child: Text(tNext.toUpperCase()),
+                    child: Text(tResetPassword.toUpperCase()),
                   ),
                 ),
               ],
