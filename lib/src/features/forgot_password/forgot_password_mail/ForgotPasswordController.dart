@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -42,11 +43,34 @@ class ForgotPasswordController extends GetxController {
     isLoading.value = true;
 
     try {
-      // Use your existing auth repository method
-      await AuthRepository.instance.sendPasswordResetEmail(emailController.text.trim());
+
+      final email = emailController.text.trim();
+
+      // check if email exist
+      final signInMethods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+
+      if (signInMethods.isEmpty) {
+        // Email doesn't exist in Firebase Auth
+        _showEmailNotFoundDialog(email);
+        return;
+      }
+
+      // email exist send reset link
+      await AuthRepository.instance.sendPasswordResetEmail(email);
       
       // Show success dialog with instructions
       _showSuccessDialog();
+
+    } on FirebaseAuthException catch (e) {
+      print('Firebase Auth error: ${e.code} - ${e.message}');
+
+      if (e.code == 'user-not-found') {
+        _showEmailNotFoundDialog(emailController.text.trim());
+      } else {
+        // Let your auth repository handle other Firebase errors
+        String errorMessage = _getPasswordResetErrorMessage(e.code);
+        _showErrorSnackbar("Reset Failed", errorMessage);
+      }
       
     } catch (e) {
       // Error handling is already done in your auth method via snackbars
@@ -150,7 +174,106 @@ class ForgotPasswordController extends GetxController {
     );
   }
 
-  // Show error snackbar (matching your LoginController style)
+  // Show email not found dialog
+  void _showEmailNotFoundDialog(String email) {
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.orange, size: 28),
+            const SizedBox(width: 12),
+            const Text(
+              'Email Not Found',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('No account found with this email address:'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.email_outlined, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      email,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange[800],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('This could mean:'),
+            const Text('• The email was typed incorrectly'),
+            const Text('• You haven\'t created an account yet'),
+            const Text('• You signed up with a different email'),
+            const SizedBox(height: 16),
+            const Text(
+              'Please check your email or create a new account.',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Try Different Email'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back(); // Close dialog
+              Get.back(); // Go back to login
+              // Navigate to sign up - you'll need to import your SignUp screen
+              // Get.to(() => SignUp());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Create Account'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  // Get error messages for password reset (from AuthRepo)
+  String _getPasswordResetErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'user-not-found':
+        return 'No account found with this email address.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'too-many-requests':
+        return 'Too many requests. Please try again later.';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection.';
+      default:
+        return 'Failed to send password reset email. Please try again.';
+    }
+  }
+
+  // Show error snackbar
   void _showErrorSnackbar(String title, String message) {
     Get.snackbar(
       title,
