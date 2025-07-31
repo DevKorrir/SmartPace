@@ -7,6 +7,7 @@ import 'package:smart_pace/src/constants/text_string.dart';
 import 'package:smart_pace/src/features/forgot_password/forgot_password_otp/otp_screen.dart';
 
 import '../../../constants/colors.dart';
+import 'ForgotPasswordController.dart';
 
 class ForgotPasswordMailScreen extends StatelessWidget {
   const ForgotPasswordMailScreen({super.key});
