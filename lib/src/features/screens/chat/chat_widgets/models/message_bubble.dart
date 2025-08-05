@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:smart_pace/src/features/screens/chat/chat_widgets/models/chat_message.dart';
 import '../../../../../constants/app_colors.dart';
-import '../models/chat_message.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;

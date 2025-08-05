@@ -1,4 +1,3 @@
-// Chat Message Model
 class ChatMessage {
   final String id;
   final String name;

@@ -12,3 +12,4 @@ class WelcomeItem {
     required this.color,
   });
 }
+

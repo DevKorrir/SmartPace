@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_pace/src/features/screens/welcome_screen/controller/welcome_controller.dart';
+import 'package:smart_pace/src/features/screens/welcome_screen/model/welcome_item.dart';
 
-import 'model/welcome_item.dart';
 
 class WelcomeScreen extends StatelessWidget {
   final WelcomeController controller = Get.put(WelcomeController());

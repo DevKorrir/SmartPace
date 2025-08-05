@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../models/chat_message.dart';
+import 'package:smart_pace/src/features/screens/chat/chat_widgets/models/chat_message.dart';
 
 class ChatDetailController extends GetxController {
   final RxList<Message> messages = <Message>[].obs;

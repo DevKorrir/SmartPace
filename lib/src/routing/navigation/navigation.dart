@@ -4,8 +4,8 @@ import 'package:smart_pace/src/features/screens/groups/groups_page.dart';
 
 import '../../features/screens/chat/chats.dart';
 import '../../features/screens/home/home.dart';
-import '../../features/screens/profile/profile.dart';
-import '../../features/screens/schedule/schedulle_screen.dart';
+import '../../features/screens/planner/planner_screen.dart';
+import 'model/nav_model.dart';
 
 class NavigationController extends GetxController {
   var selectedIndex = 0.obs;
@@ -13,17 +13,6 @@ class NavigationController extends GetxController {
   void changeTabIndex(int index) {
     selectedIndex.value = index;
   }
-
-  // Page titles for app bar
-  List<String> get pageTitles => [
-    'SmartPace',
-    'Schedule',
-    'Chats',
-    'Groups'
-    'Profile',
-  ];
-
-  String get currentPageTitle => pageTitles[selectedIndex.value];
 }
 
 // Main Navigation Widget
@@ -32,82 +21,135 @@ class MainNavigation extends StatelessWidget {
 
   MainNavigation({super.key});
 
-  // List of pages/widgets for navigation
   final List<Widget> pages = [
     HomeScreen(),
-    PlannerScreen(),
+    AIStudyPlannerScreen(),
     ChatScreen(),
     GroupsPage(),
-    ProfileScreen(),
+  ];
+
+  // Navigation items configuration
+  final List<NavigationItem> navigationItems = [
+    NavigationItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Home',
+      color: const Color(0xFF6366F1), // Indigo
+    ),
+    NavigationItem(
+      icon: Icons.calendar_today_outlined,
+      activeIcon: Icons.calendar_today_rounded,
+      label: 'Plan',
+      color: const Color(0xFF8B5CF6), // Purple
+    ),
+    NavigationItem(
+      icon: Icons.chat_bubble_outline_rounded,
+      activeIcon: Icons.chat_bubble_rounded,
+      label: 'Chats',
+      color: const Color(0xFF06B6D4), // Cyan
+    ),
+    NavigationItem(
+      icon: Icons.people_outline_rounded,
+      activeIcon: Icons.people_rounded,
+      label: 'Groups',
+      color: const Color(0xFF10B981), // Emerald
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
       body: Obx(() => pages[navController.selectedIndex.value]),
       bottomNavigationBar: Obx(() => Container(
+        height: 90,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark 
+            ? const Color(0xFF1F2937).withOpacity(0.95)
+            : Colors.white.withOpacity(0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+              color: isDark 
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -8),
+              spreadRadius: 0,
             ),
           ],
         ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.white,
-          currentIndex: navController.selectedIndex.value,
-          onTap: navController.changeTabIndex,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey.shade500,
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
-          ),
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: "Home",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              activeIcon: Icon(Icons.calendar_today),
-              label: "Schedule",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.chat_outlined),
-              activeIcon: Icon(Icons.chat),
-              label: "Chats",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.group_outlined),
-              activeIcon: Icon(Icons.group),
-              label: "Groups",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: "Profile",
-            ),
-          ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: navigationItems.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final isSelected = navController.selectedIndex.value == index;
+            
+            return GestureDetector(
+              onTap: () => navController.changeTabIndex(index),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected 
+                    ? item.color.withOpacity(0.1)
+                    : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isSelected 
+                          ? item.color.withOpacity(0.15)
+                          : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isSelected ? item.activeIcon : item.icon,
+                        color: isSelected 
+                          ? item.color
+                          : isDark 
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: TextStyle(
+                        color: isSelected 
+                          ? item.color
+                          : isDark 
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                        fontSize: 12,
+                        fontWeight: isSelected 
+                          ? FontWeight.w600 
+                          : FontWeight.w500,
+                      ),
+                      child: Text(item.label),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         ),
       )),
     );
   }
 }
 
-
-
-
-
-
-
+ 

@@ -3,23 +3,19 @@ description: "SmartPace Student Planner App."
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-
 version: 1.0.0+1
 
 environment:
   sdk: ^3.7.2
 
-
 dependencies:
   flutter:
     sdk: flutter
-
 
   cupertino_icons: ^1.0.8
   get: ^4.6.6
   flutter_otp_text_field: ^1.5.1+1
   google_fonts: ^6.1.0
-
 
   # Firebase + Auth
   firebase_auth: ^5.7.0
@@ -29,32 +25,26 @@ dependencies:
 
   # Google Sign In
   google_sign_in: ^7.1.1
-
-
+  shared_preferences: ^2.5.3
+  cached_network_image: ^3.4.1
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.13.1
 
-
-
-
 flutter:
-
 
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/images/
-    - assets/logo/
-    - assets/images/profile.jpg
-
-  
+  - assets/images/
+  - assets/logo/
+  - assets/images/profile.jpg
   # fonts:
   #   - family: Schyler
   #     fonts:
@@ -67,9 +57,11 @@ flutter:
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
-  
+
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: "assets/logo/smartpace.png"
   min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF" 
+  adaptive_icon_foreground: "assets/logo/smartpace.png"

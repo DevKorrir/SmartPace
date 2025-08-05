@@ -4,8 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smart_pace/src/features/authentication/auth_repository/auth_repository.dart';
 
 import '../../screens/auth/login/login.dart';
-import '../auth_repository/exceptions/sign_up_email_and_password_failure.dart';
-import '../domain/model/signup_request.dart';
 
 class SignUpController extends GetxController {
   // Text Controllers
@@ -132,40 +130,31 @@ class SignUpController extends GetxController {
       return;
     }
 
-    isLoading.value = true;
-    final req = SignUpRequest(
-      fullName: fullNameController.text,
-      email: emailController.text,
-      phone: phoneController.text,
-      password: passwordController.text,
-    );
-
     try {
-      await AuthRepository.instance.createUserWithEmailAndPassword(req);
+      isLoading.value = true;
+
+      await registerUser(emailController.text, passwordController.text);
 
       // Success - Show success message
       Get.snackbar(
-        'Account Created',
-        'Please check your email and verify your account before signing in.',
+        'Success',
+        'Account created successfully! Welcome to SmartPace!',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green[100],
         colorText: Colors.green[800],
-        duration: const Duration(seconds: 5),
+        duration: const Duration(seconds: 3),
       );
 
-      // Clear the form
-      _clearForm();
-
       // Navigate to login screen or home
-      Get.offAll(() => const Login());
+      Get.to(() => const Login());
 
-    } on SignUpWithEmailAndPasswordFailure catch (e) {
+    } on FirebaseAuthException catch (e) {
       // Handle specific Firebase Auth exceptions
-      //String errorMessage = _getFirebaseAuthErrorMessage(e.code);
+      String errorMessage = _getFirebaseAuthErrorMessage(e.code);
       
       Get.snackbar(
         'Sign Up Failed',
-        e.message,
+        errorMessage,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red[100],
         colorText: Colors.red[800],
@@ -185,23 +174,6 @@ class SignUpController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  // Add method to clear form after successful signup
-  void _clearForm() {
-    fullNameController.clear();
-    emailController.clear();
-    phoneController.clear();
-    passwordController.clear();
-    confirmPasswordController.clear();
-    acceptTerms.value = false;
-
-    // Clear error messages
-    fullNameError.value = '';
-    emailError.value = '';
-    phoneError.value = '';
-    passwordError.value = '';
-    confirmPasswordError.value = '';
   }
 
   // Get user-friendly error messages for Firebase Auth errors
@@ -239,9 +211,9 @@ class SignUpController extends GetxController {
   }
 
   // Make registerUser async and await the AuthRepository call
-  // Future<void> registerUser(SignUpRequest req,) async {
-  //   await AuthRepository.instance.createUserWithEmailAndPassword( req );
-  // }
+  Future<void> registerUser(String email, String password) async {
+    await AuthRepository.instance.createUserWithEmailAndPassword(email, password);
+  }
   
   // Handle Google Sign Up with proper exception handling
   Future<void> handleGoogleSignUp() async {
