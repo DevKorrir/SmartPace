@@ -1,46 +1,72 @@
-# 📚 Smartpace
+# SmartPace
 
-**Smartpace** is a mobile application designed to help university and college students plan their studies, get reminders, collaborate in study groups, and chat with peers — all in one place. Built with **Flutter** and powered by **RethinkDB** and **Docker** on the backend, Smartpace empowers learners to study smarter and stay ahead.
+**SmartPace** is a comprehensive student planner and collaboration app designed to help students organize their studies, connect with peers, and achieve academic success.
 
----
+## Features
 
-## ✨ Features
+- 📅 Smart Study Planning  
+- 💬 Real-time Chat  
+- 👥 Study Groups  
+- 📊 Progress Tracking  
 
-- 📅 **Study Planner** – Schedule study sessions and set academic goals.
-- 🔔 **Reminders** – Get timely notifications for planned tasks and group discussions.
-- 🧠 **Group Study** – Create or join study groups and collaborate with peers.
-- 💬 **Real-Time Chat** – Chat with fellow students in real time.
-  
 
----
 
-## 📱 Screenshots
-
-> _Coming soon_ 
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- Flutter (Dart)
-- GetX for state management and routing
-
-### Backend
-- Firebase
-- Hive
-
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- Flutter SDK
-- Android Studio or VS Code
-- Firebase set up
 
-### Clone the repo
+- [Flutter SDK](https://flutter.dev/docs/get-started/install)
+- Dart SDK
+- Firebase project (for authentication and storage)
 
-```bash
-git clone https://github.com/Jude254-programmer/SmartPace.git
-cd SmartPace
+### Installation
+
+1. **Clone the repository:**
+   ```
+   git clone https://github.com/yourusername/smartpace.git
+   cd smartpace
+   ```
+
+2. **Install dependencies:**
+   ```
+   flutter pub get
+   ```
+
+3. **Configure Firebase:**
+   - Add your `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) to the respective directories.
+   - Update `firebase_options.dart` if needed.
+
+4. **Generate launcher icons (optional):**
+   ```
+   flutter pub run flutter_launcher_icons
+   ```
+
+5. **Run the app:**
+   ```
+   flutter run
+   ```
+
+## Project Structure
+
+```
+lib/
+  src/
+    features/
+      authentication/
+      screens/
+      ...
+    routing/
+  main.dart
+```
+
+## Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+© 2025 SmartPace Team
